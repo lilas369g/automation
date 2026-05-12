@@ -1,0 +1,4626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automation Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(15, 23, 42, 0.52);
+      --panel-strong: rgba(15, 23, 42, 0.68);
+      --panel-line: rgba(148, 163, 184, 0.14);
+      --border: rgba(148, 163, 184, 0.16);
+      --border-active: #22d3ee;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-deep: #7dd3fc;
+      --accent-soft: rgba(56, 189, 248, 0.14);
+      --success: #34d399;
+      --success-soft: rgba(52, 211, 153, 0.14);
+      --warning-soft: rgba(56, 189, 248, 0.1);
+      --danger: #f87171;
+      --danger-soft: rgba(248, 113, 113, 0.12);
+      --shadow: 0 24px 60px rgba(2, 6, 23, 0.42);
+      --shadow-soft: 0 16px 34px rgba(2, 6, 23, 0.3);
+      --log-bg: rgba(2, 6, 23, 0.72);
+      --grid: rgba(34, 211, 238, 0.08);
+      --glow: rgba(34, 211, 238, 0.18);
+      --glow-strong: rgba(56, 189, 248, 0.32);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      color: var(--text);
+      position: relative;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.16), transparent 24%),
+        radial-gradient(circle at 85% 12%, rgba(34, 211, 238, 0.14), transparent 22%),
+        radial-gradient(circle at 78% 78%, rgba(99, 102, 241, 0.14), transparent 20%),
+        linear-gradient(135deg, #0f172a 0%, #111827 55%, #020617 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(10px);
+    }
+
+    body::before {
+      top: 40px;
+      right: 60px;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.14);
+    }
+
+    body::after {
+      left: 40px;
+      bottom: 40px;
+      width: 280px;
+      height: 280px;
+      border-radius: 40px;
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      min-height: 100vh;
+      gap: 14px;
+      padding: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .sidebar,
+    .main-panel {
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--panel-line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sidebar::before,
+    .main-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      gap: 14px;
+      overflow: visible;
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.42)),
+        var(--panel);
+    }
+
+    .sidebar-header h1,
+    .panel-title h2,
+    .history-header h2 {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: -0.03em;
+    }
+
+    .sidebar-header p,
+    .panel-title p,
+    .history-header p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 0.78rem;
+    }
+
+    .add-node-btn,
+    .save-chat-btn,
+    .new-chat-btn,
+    .clear-log-btn,
+    .reset-app-btn {
+      border-radius: 13px;
+      padding: 10px 12px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .add-node-btn {
+      color: #e0f2fe;
+      border: 1px solid rgba(125, 211, 252, 0.24);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.72), rgba(99, 102, 241, 0.72));
+      box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.08), 0 16px 32px rgba(14, 165, 233, 0.22);
+    }
+
+    .add-node-btn:hover,
+    .save-chat-btn:hover,
+    .new-chat-btn:hover,
+    .clear-log-btn:hover,
+    .reset-app-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.18);
+    }
+
+    .sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .save-chat-btn,
+    .new-chat-btn {
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.68), rgba(15, 23, 42, 0.8));
+      color: #e2e8f0;
+    }
+
+    .connection-status {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.42);
+      border: 1px solid rgba(125, 211, 252, 0.1);
+    }
+
+    .connection-status.connected {
+      color: #bbf7d0;
+      border-color: rgba(52, 211, 153, 0.18);
+      box-shadow: 0 0 18px rgba(52, 211, 153, 0.08);
+    }
+
+    .connection-status.error {
+      color: #fecaca;
+      border-color: rgba(248, 113, 113, 0.18);
+    }
+
+    .conversation-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 180px;
+      gap: 12px;
+    }
+
+    .conversation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .conversation-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .conversation-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.58), rgba(15, 23, 42, 0.5));
+      color: var(--text);
+      padding: 12px 13px;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .conversation-item:hover {
+      transform: translateY(-2px);
+      border-color: rgba(125, 211, 252, 0.22);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.08);
+    }
+
+    .conversation-item.active {
+      border-color: rgba(34, 211, 238, 0.34);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12), 0 0 22px rgba(34, 211, 238, 0.12);
+    }
+
+    .conversation-delete-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      min-width: 42px;
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(127, 29, 29, 0.26), rgba(69, 10, 10, 0.24));
+      color: #fecaca;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .conversation-delete-btn:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(180deg, rgba(153, 27, 27, 0.34), rgba(69, 10, 10, 0.32));
+      border-color: rgba(248, 113, 113, 0.32);
+    }
+
+    .conversation-delete-btn svg {
+      width: 16px;
+      height: 16px;
+      pointer-events: none;
+    }
+
+    .conversation-title {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #e0f2fe;
+      margin-bottom: 4px;
+    }
+
+    .conversation-meta {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .conversation-empty {
+      margin: 0;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px dashed rgba(148, 163, 184, 0.14);
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.6;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.28);
+    }
+
+    .nodes-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      gap: 14px;
+    }
+
+    .nodes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .node-card,
+    .active-node-card {
+      position: relative;
+      background:
+        linear-gradient(180deg, rgba(30, 41, 59, 0.56), rgba(15, 23, 42, 0.46));
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-soft);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .node-card {
+      width: 100%;
+      min-height: 86px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      row-gap: 8px;
+      column-gap: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .node-card:hover {
+      border-color: rgba(125, 211, 252, 0.28);
+      transform: translateY(-3px);
+      box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.08), 0 18px 32px rgba(2, 6, 23, 0.34);
+    }
+
+    .node-card.dragging {
+      cursor: grabbing;
+      z-index: 20;
+      opacity: 0.14;
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.18), 0 24px 40px rgba(2, 6, 23, 0.42);
+      border-color: rgba(34, 211, 238, 0.4);
+    }
+
+    .drag-ghost {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 9999;
+      pointer-events: none;
+      margin: 0;
+      transform: translate(-50%, -50%) rotate(1.5deg);
+      opacity: 0.98;
+      box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.16), 0 24px 46px rgba(2, 6, 23, 0.5), 0 0 30px rgba(34, 211, 238, 0.18);
+    }
+
+    .node-card.activated {
+      border-color: rgba(52, 211, 153, 0.36);
+      box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.12), 0 18px 34px rgba(2, 6, 23, 0.34);
+    }
+
+    .node-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .node-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #bae6fd;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(99, 102, 241, 0.14));
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 211, 252, 0.12);
+    }
+
+    .node-status {
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.52);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .node-card label,
+    .active-node-card label {
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .node-card label {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+    }
+
+    .active-node-card label {
+      font-size: 0.70rem;
+      gap: 5px;
+    }
+
+    .node-card input[type="text"],
+    .node-card input[type="color"],
+    .node-card select,
+    .active-node-card input[type="text"],
+    .active-node-card input[type="color"],
+    .active-node-card select {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.56);
+      font: inherit;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      color: var(--text);
+    }
+
+    .node-card input[type="text"],
+    .node-card select,
+    .active-node-card input[type="text"],
+    .active-node-card select {
+      color: var(--text);
+    }
+
+    .node-card select {
+      height: 36px;
+      min-height: 36px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+    }
+
+    .active-node-card select {
+      height: 34px;
+      min-height: 34px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      font-size: 0.74rem;
+    }
+
+    .node-card input[type="text"]:focus,
+    .node-card select:focus,
+    .active-node-card input[type="text"]:focus,
+    .active-node-card select:focus,
+    .node-card input[type="color"]:focus,
+    .active-node-card input[type="color"]:focus {
+      outline: none;
+      border-color: rgba(34, 211, 238, 0.5);
+      box-shadow: 0 0 0 4px var(--glow), 0 0 24px rgba(34, 211, 238, 0.14);
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    .node-card input[type="color"],
+    .active-node-card input[type="color"] {
+      cursor: pointer;
+    }
+
+    .node-card input[type="color"] {
+      height: 34px;
+      min-height: 34px;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .active-node-card input[type="color"] {
+      height: 34px;
+      min-height: 34px;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .node-help {
+      grid-column: 2;
+      margin: 0;
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(420px, 440px);
+      gap: 12px;
+      padding: 14px;
+      min-height: 0;
+    }
+
+    .workspace-panel,
+    .history-panel {
+      background: rgba(15, 23, 42, 0.42);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 20px;
+      padding: 16px;
+      min-height: 0;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .workspace-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .workspace-panel .panel-title {
+      margin-bottom: 8px;
+    }
+
+    .workspace {
+      flex: 1;
+      display: block;
+      min-height: 220px;
+      max-height: none;
+      padding: 0;
+      border-radius: 22px;
+      background:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 26%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.92));
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      overflow: visible;
+      position: relative;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .workspace::before {
+      content: none;
+    }
+
+    .activation-zone {
+      width: 100%;
+      min-height: 220px;
+      height: auto;
+      border: none;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 26%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.92));
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      text-align: left;
+      padding: 16px;
+      box-shadow: none;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    }
+
+    .activation-zone.active-drop {
+      border: 1px solid rgba(34, 211, 238, 0.45);
+      background:
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), transparent 26%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.94));
+      box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.28), 0 0 24px rgba(34, 211, 238, 0.14);
+      transform: none;
+    }
+
+    .activation-zone h3 {
+      margin: 0 0 4px;
+      font-size: 1.05rem;
+    }
+
+    .activation-zone p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.35;
+      max-width: none;
+      font-size: 0.78rem;
+    }
+
+    .activation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .activation-header > div {
+      flex: 1;
+    }
+
+    .activation-pill {
+      white-space: nowrap;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(99, 102, 241, 0.18));
+      color: #bae6fd;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid rgba(125, 211, 252, 0.12);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.08);
+    }
+
+    .workspace-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .workspace-text-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.44);
+      border: 1px solid rgba(125, 211, 252, 0.12);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .workspace-text-panel label {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .workspace-text-input {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.56);
+      color: var(--text);
+      padding: 11px 13px;
+      font: inherit;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .workspace-text-input:focus {
+      outline: none;
+      border-color: rgba(34, 211, 238, 0.5);
+      box-shadow: 0 0 0 4px var(--glow), 0 0 24px rgba(34, 211, 238, 0.14);
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    .link-status {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.56), rgba(30, 41, 59, 0.52));
+      border: 1px solid rgba(125, 211, 252, 0.12);
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .activation-empty {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      min-height: 110px;
+      border: 1px solid rgba(125, 211, 252, 0.1);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.34));
+      padding: 16px;
+    }
+
+    .activation-empty h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .activation-empty p {
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .active-nodes-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: stretch;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .active-node-card {
+      width: 100%;
+      min-height: auto;
+      padding: 10px;
+      border-radius: 16px;
+      gap: 8px;
+      border-color: rgba(34, 211, 238, 0.26);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12), 0 16px 28px rgba(2, 6, 23, 0.34);
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.54));
+    }
+
+    .active-node-card .node-status {
+      color: #6ee7b7;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(52, 211, 153, 0.1);
+    }
+
+    .flow-node {
+      width: 190px;
+      max-width: 190px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      cursor: grab;
+      transition: transform 0.18s ease, filter 0.18s ease;
+    }
+
+    .flow-node.dragging-flow {
+      z-index: 40;
+      filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.18));
+      cursor: grabbing;
+    }
+
+    .flow-node.flow-drop-target .active-node-card {
+      border-color: rgba(34, 211, 238, 0.4);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.18), 0 0 28px rgba(34, 211, 238, 0.14);
+    }
+
+    .flow-step {
+      margin-bottom: 8px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #bae6fd;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(125, 211, 252, 0.14);
+    }
+
+    .flow-connector {
+      display: none;
+    }
+
+    .flow-connector::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      transform: translateY(-50%) rotate(45deg);
+      border-top: 2px solid rgba(125, 211, 252, 0.88);
+      border-right: 2px solid rgba(125, 211, 252, 0.88);
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    .node-title {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .run-node-btn {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      padding: 7px 10px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.78), rgba(99, 102, 241, 0.76));
+      color: #e0f2fe;
+      font: inherit;
+      font-size: 0.70rem;
+      font-weight: 700;
+      min-height: auto;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.08), 0 14px 26px rgba(14, 165, 233, 0.18);
+    }
+
+    .run-node-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), 0 18px 30px rgba(14, 165, 233, 0.2);
+    }
+
+    .run-node-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .node-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .node-card .node-actions {
+      grid-column: 1;
+    }
+
+    .compact-active-actions {
+      justify-content: flex-start;
+    }
+
+    .delete-node-btn,
+    .remove-active-btn {
+      border: 1px solid rgba(248, 113, 113, 0.18);
+      border-radius: 10px;
+      padding: 7px 10px;
+      background: linear-gradient(180deg, rgba(127, 29, 29, 0.18), rgba(69, 10, 10, 0.16));
+      color: var(--danger);
+      font: inherit;
+      font-size: 0.70rem;
+      font-weight: 700;
+      min-height: auto;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .delete-node-btn:hover,
+    .remove-active-btn:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(180deg, rgba(127, 29, 29, 0.34), rgba(69, 10, 10, 0.3));
+    }
+
+    .node-card .delete-node-btn {
+      padding: 6px 9px;
+      font-size: 0.68rem;
+      border-radius: 10px;
+    }
+
+    .compact-active-actions .run-node-btn,
+    .compact-active-actions .remove-active-btn,
+    .compact-active-actions .delete-node-btn {
+      padding: 6px 8px;
+      font-size: 0.66rem;
+      border-radius: 9px;
+    }
+
+    .history-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 260px;
+      max-height: 440px;
+      padding: 14px;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .history-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .history-header h2 {
+      font-size: 1rem;
+    }
+
+    .history-header p {
+      font-size: 0.74rem;
+      line-height: 1.25;
+      margin-top: 4px;
+    }
+
+    .history-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .history-actions button,
+    .clear-log-btn,
+    .reset-app-btn,
+    .save-chat-btn {
+      padding: 8px 10px;
+      font-size: 0.78rem;
+      border-radius: 12px;
+    }
+
+    .clear-log-btn {
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.62), rgba(15, 23, 42, 0.72));
+      border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .reset-app-btn {
+      color: #fee2e2;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.5), rgba(190, 24, 93, 0.42));
+    }
+
+    .history-content {
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr);
+      gap: 12px;
+    }
+
+    .chatbot-panel {
+      display: flex;
+      flex-direction: column;
+      height: 340px;
+      max-height: 340px;
+      min-height: 340px;
+      overflow: hidden;
+      gap: 0;
+      border-radius: 22px;
+      padding: 14px;
+      background:
+        radial-gradient(circle at top left, rgba(125, 211, 252, 0.1), transparent 22%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.94));
+      border: 1px solid rgba(125, 211, 252, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 18px 34px rgba(2, 6, 23, 0.3);
+    }
+
+    .chatbot-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .chatbot-header h3 {
+      margin: 0;
+      font-size: 0.92rem;
+      letter-spacing: -0.01em;
+    }
+
+    .chatbot-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.45;
+    }
+
+    .chatbot-status {
+      min-width: 64px;
+      text-align: center;
+      padding: 6px 9px;
+      border-radius: 999px;
+      color: #bae6fd;
+      font-size: 0.68rem;
+      font-weight: 700;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(125, 211, 252, 0.12);
+    }
+
+    .chatbot-status.loading {
+      color: #fde68a;
+      border-color: rgba(250, 204, 21, 0.18);
+      background: rgba(202, 138, 4, 0.12);
+    }
+
+    .chatbot-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .clear-ai-chat-btn {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(15, 23, 42, 0.58);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .clear-ai-chat-btn:hover {
+      transform: translateY(-1px);
+      color: var(--text);
+      border-color: rgba(125, 211, 252, 0.28);
+    }
+
+    .chatbot-messages {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 4px 10px 0;
+    }
+
+    .bot-message {
+      width: fit-content;
+      max-width: 88%;
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(15, 23, 42, 0.58);
+      box-shadow: 0 12px 24px rgba(2, 6, 23, 0.16);
+    }
+
+    .ai-chat-message,
+    .chatbot-message,
+    .bot-message,
+    .message-bubble,
+    .ai-message,
+    .chat-message {
+      max-width: 100%;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.45;
+      unicode-bidi: plaintext;
+      text-align: start;
+    }
+
+    .ai-chat-message p,
+    .chatbot-message p,
+    .bot-message p,
+    .message-bubble p,
+    .ai-message p,
+    .chat-message p {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      margin: 0;
+    }
+
+    .user-message,
+    .chat-message.user,
+    .ai-chat-message.user,
+    .chatbot-message.user,
+    .bot-message.user {
+      max-width: min(82%, 720px);
+    }
+
+    .assistant-message,
+    .chat-message.assistant,
+    .ai-chat-message.assistant,
+    .chatbot-message.assistant,
+    .bot-message.assistant {
+      max-width: min(82%, 720px);
+    }
+
+    .bot-message-role {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .bot-message-text {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.84rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .bot-message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.42), rgba(99, 102, 241, 0.34));
+      border-color: rgba(125, 211, 252, 0.24);
+    }
+
+    .bot-message.assistant {
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.62), rgba(15, 23, 42, 0.56));
+    }
+
+    .bot-message.system {
+      align-self: center;
+      max-width: 96%;
+      background: rgba(15, 23, 42, 0.42);
+      border-style: dashed;
+    }
+
+    .bot-message.action {
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(6, 78, 59, 0.34), rgba(20, 83, 45, 0.24));
+      border-color: rgba(52, 211, 153, 0.24);
+    }
+
+    .bot-message.error {
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(127, 29, 29, 0.3), rgba(69, 10, 10, 0.26));
+      border-color: rgba(248, 113, 113, 0.24);
+    }
+
+    .chatbot-form {
+      flex: 0 0 auto;
+      display: flex;
+      width: 100%;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .chatbot-input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.62);
+      color: var(--text);
+      height: 42px;
+      min-height: 42px;
+      padding: 9px 12px;
+      font: inherit;
+      font-size: 0.82rem;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .chatbot-input:focus {
+      outline: none;
+      border-color: rgba(34, 211, 238, 0.5);
+      box-shadow: 0 0 0 4px var(--glow), 0 0 24px rgba(34, 211, 238, 0.14);
+      background: rgba(15, 23, 42, 0.78);
+    }
+
+    .chatbot-send-btn {
+      flex: 0 0 auto;
+      border: 1px solid rgba(125, 211, 252, 0.24);
+      border-radius: 14px;
+      height: 42px;
+      min-height: 42px;
+      padding: 0 14px;
+      color: #e0f2fe;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.7), rgba(99, 102, 241, 0.68));
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .chatbot-send-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.18);
+    }
+
+    .chatbot-send-btn:disabled,
+    .chatbot-input:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+    }
+
+    .history-list {
+      flex: 1;
+      min-height: 0;
+      height: 230px;
+      max-height: 230px;
+      overflow-y: auto;
+      background:
+        radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 18%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.96));
+      color: #f6eadb;
+      border-radius: 22px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 18px 34px rgba(2, 6, 23, 0.34);
+    }
+
+    .history-item {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.42));
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 14px;
+      padding: 9px 12px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .history-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+      font-size: 0.68rem;
+      color: #dbc8b3;
+    }
+
+    .history-message {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .history-empty {
+      margin: auto;
+      text-align: center;
+      color: #d9c8b8;
+      line-height: 1.6;
+    }
+
+    .nodes-list::-webkit-scrollbar,
+    .conversation-list::-webkit-scrollbar,
+    .chatbot-messages::-webkit-scrollbar,
+    .history-list::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .nodes-list::-webkit-scrollbar-thumb,
+    .conversation-list::-webkit-scrollbar-thumb,
+    .chatbot-messages::-webkit-scrollbar-thumb,
+    .history-list::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.22);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    @media (max-width: 1080px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .main-panel {
+        grid-template-rows: auto minmax(420px, 440px);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .history-content {
+        grid-template-columns: 1fr;
+      }
+
+      .history-panel {
+        max-height: none;
+      }
+
+      .chatbot-panel {
+        height: 340px;
+        max-height: 340px;
+        min-height: 340px;
+      }
+
+      .history-list {
+        height: 220px;
+        max-height: 220px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .sidebar,
+      .main-panel,
+      .workspace-panel,
+      .history-panel {
+        border-radius: 18px;
+      }
+
+      .main-panel {
+        padding: 14px;
+      }
+
+      .workspace-panel,
+      .history-panel {
+        padding: 16px;
+      }
+
+      .activation-zone {
+        width: 100%;
+        min-height: 220px;
+      }
+
+      .history-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chatbot-form {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>Automation Nodes</h1>
+        <p>Create free nodes, style them your way, then drag them into the activation workspace to build simple automations.</p>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="add-node-btn" id="addNodeBtn" type="button">Add New Node</button>
+        <div class="sidebar-button-row">
+          <button class="new-chat-btn" id="newChatBtn" type="button">New Chat</button>
+          <button class="save-chat-btn" id="saveChatBtn" type="button">Save Chat</button>
+        </div>
+        <p class="connection-status" id="connectionStatus">Supabase is not configured yet.</p>
+      </div>
+
+      <section class="conversation-panel">
+        <div class="panel-title">
+          <h2>Conversations</h2>
+          <p>Saved chats from your external database appear here.</p>
+        </div>
+        <div class="conversation-list" id="conversationsList"></div>
+      </section>
+
+      <section class="nodes-panel">
+        <div class="panel-title">
+          <h2>Available Nodes</h2>
+          <p>Each new node starts free, and you choose its type when you need it.</p>
+        </div>
+        <div class="nodes-list" id="nodesList"></div>
+      </section>
+    </aside>
+
+    <main class="main-panel">
+      <section class="workspace-panel">
+        <div class="panel-title">
+          <h2>Workspace</h2>
+          <p>Drag nodes into the larger activation workspace, then edit and run them from inside it.</p>
+        </div>
+        <div class="workspace">
+          <div class="activation-zone" id="activationZone">
+            <div class="activation-header">
+              <div>
+                <h3>Activation Workspace</h3>
+                <p>Drop a node here so it becomes part of the workspace. After that you can edit its message and run it any time.</p>
+              </div>
+              <span class="activation-pill" id="activeCount">0 Active Nodes</span>
+            </div>
+            <div id="activeNodesContainer"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="history-panel">
+        <div class="history-toolbar">
+          <div class="history-header">
+            <h2>Chat / History Panel</h2>
+            <p>Every activation and important state change can be synced to your external database.</p>
+          </div>
+          <div class="history-actions">
+            <button class="save-chat-btn" id="saveChatBtnSecondary" type="button">Save Chat</button>
+            <button class="clear-log-btn" id="clearLogBtn" type="button">Clear History</button>
+            <button class="reset-app-btn" id="resetAppBtn" type="button">Reset App</button>
+          </div>
+        </div>
+        <div class="history-content">
+          <section class="chatbot-panel" aria-label="AI automation chatbot">
+            <div class="chatbot-header">
+              <div>
+                <h3>AI Automation Chat</h3>
+                <p>Ask questions or control nodes with natural language.</p>
+              </div>
+              <div class="chatbot-header-actions">
+                <button class="clear-ai-chat-btn" id="clearAiChatBtn" type="button">Clear Chat</button>
+                <span class="chatbot-status" id="chatbotStatus">Ready</span>
+              </div>
+            </div>
+            <div class="chatbot-messages" id="chatbotMessages" aria-live="polite"></div>
+            <form class="chatbot-form" id="chatbotForm">
+              <input
+                class="chatbot-input"
+                id="chatbotInput"
+                type="text"
+                autocomplete="off"
+                placeholder="Ask AI or control the flow"
+              >
+              <button class="chatbot-send-btn" id="chatbotSendBtn" type="submit">Send</button>
+            </form>
+          </section>
+          <div class="history-list" id="historyList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://vfjgcxplqrzngigfbyfk.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_HRwgj1uGkoaRyvC3dSLUjg_r-XFknRc";
+    const NODE_TYPES = ["None", "Log", "Color", "Uppercase", "Copy", "Alert"];
+    const AUTO_SAVE_DELAY = 700;
+
+    function getDefaultNodes() {
+      return [
+        {
+          id: 1,
+          type: "Log",
+          title: "Node",
+          color: "#ff7a18",
+          isInZone: false,
+          activeOrder: null,
+          x: 0,
+          y: 0
+        },
+        {
+          id: 2,
+          type: "Color",
+          title: "Node",
+          color: "#22d3ee",
+          isInZone: false,
+          activeOrder: null,
+          x: 0,
+          y: 0
+        }
+      ];
+    }
+
+    function getInitialState() {
+      return {
+        nextNodeId: 3,
+        workspaceText: "",
+        nodes: getDefaultNodes(),
+        history: []
+      };
+    }
+
+    const state = getInitialState();
+    const nodesList = document.getElementById("nodesList");
+    const historyList = document.getElementById("historyList");
+    const conversationsList = document.getElementById("conversationsList");
+    const addNodeBtn = document.getElementById("addNodeBtn");
+    const newChatBtn = document.getElementById("newChatBtn");
+    const saveChatBtn = document.getElementById("saveChatBtn");
+    const saveChatBtnSecondary = document.getElementById("saveChatBtnSecondary");
+    const clearLogBtn = document.getElementById("clearLogBtn");
+    const resetAppBtn = document.getElementById("resetAppBtn");
+    const activationZone = document.getElementById("activationZone");
+    const activeNodesContainer = document.getElementById("activeNodesContainer");
+    const activeCount = document.getElementById("activeCount");
+    const connectionStatus = document.getElementById("connectionStatus");
+    const chatbotMessages = document.getElementById("chatbotMessages");
+    const chatbotForm = document.getElementById("chatbotForm");
+    const chatbotInput = document.getElementById("chatbotInput");
+    const chatbotSendBtn = document.getElementById("chatbotSendBtn");
+    const chatbotStatus = document.getElementById("chatbotStatus");
+    const clearAiChatBtn = document.getElementById("clearAiChatBtn");
+
+    const isSupabaseConfigured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
+    const supabaseClient = isSupabaseConfigured && window.supabase
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    let conversations = [];
+    let currentConversationId = null;
+    let autoSaveTimer = null;
+    let isAutoSaving = false;
+    let suppressAutoSave = false;
+    let lastAlertTimestamp = 0;
+    let dragGhost = null;
+    let pendingAutomationIntent = null;
+    let lastCreatedNodeId = null;
+
+    addNodeBtn.addEventListener("click", () => {
+      const node = createNode("Node", "None");
+      state.nodes.push(node);
+      addHistory("system", `Created "${node.title}" (${node.type}) node.`);
+      saveState();
+      render();
+    });
+
+    newChatBtn.addEventListener("click", handleNewChat);
+    saveChatBtn.addEventListener("click", handleSaveChat);
+    saveChatBtnSecondary.addEventListener("click", handleSaveChat);
+    chatbotForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void sendChatMessage();
+    });
+    if (clearAiChatBtn) {
+      clearAiChatBtn.addEventListener("click", clearAiChatMessages);
+    }
+
+    clearLogBtn.addEventListener("click", () => {
+      state.history = [];
+      addHistory("system", "History cleared.");
+      saveState();
+      renderHistory();
+    });
+
+    resetAppBtn.addEventListener("click", handleResetApp);
+
+    function normalizeNodeType(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+      const match = NODE_TYPES.find((type) => type.toLowerCase() === normalized);
+      return match || "";
+    }
+
+    function normalizeNode(node, index) {
+      const type = normalizeNodeType(node.type) || "None";
+      return {
+        id: Number.isInteger(node.id) ? node.id : index + 1,
+        type,
+        title: typeof node.title === "string" && node.title.trim() ? node.title : `Node ${index + 1}`,
+        color: typeof node.color === "string" ? node.color : "#ff7a18",
+        isInZone: Boolean(node.isInZone),
+        activeOrder: typeof node.activeOrder === "number" ? node.activeOrder : null,
+        x: typeof node.x === "number" ? node.x : 0,
+        y: typeof node.y === "number" ? node.y : 0
+      };
+    }
+
+    function sanitizeState(rawState) {
+      const initial = getInitialState();
+      const nodes = Array.isArray(rawState.nodes) && rawState.nodes.length
+        ? rawState.nodes.map(normalizeNode)
+        : initial.nodes;
+      const highestId = nodes.reduce((maxId, node) => Math.max(maxId, node.id), 0);
+
+      return {
+        nextNodeId: Number.isInteger(rawState.nextNodeId) ? rawState.nextNodeId : highestId + 1,
+        workspaceText: typeof rawState.workspaceText === "string" ? rawState.workspaceText : "",
+        nodes,
+        history: Array.isArray(rawState.history) ? rawState.history : []
+      };
+    }
+
+    function resetState(nextState = getInitialState()) {
+      suppressAutoSave = true;
+      Object.assign(state, sanitizeState(nextState));
+      suppressAutoSave = false;
+    }
+
+    function createNode(customTitle, type = "None") {
+      const node = {
+        id: state.nextNodeId,
+        type: normalizeNodeType(type) || "None",
+        title: customTitle || "Node",
+        color: "#ff7a18",
+        isInZone: false,
+        activeOrder: null,
+        x: 0,
+        y: 0
+      };
+
+      state.nextNodeId += 1;
+      return node;
+    }
+
+    function getNodeBadgeLabel(node) {
+      return node.type === "None" ? "Unassigned Type" : `${node.type} Node`;
+    }
+
+    function getNodeHelpText(node) {
+      if (node.type === "Color") {
+        return "Sets the color used by the flow text for the steps that come after it.";
+      }
+
+      if (node.type === "Log") {
+        return "Prints the shared text from the activation workspace into the history panel.";
+      }
+
+      if (node.type === "Uppercase") {
+        return "Converts the shared flow text to uppercase before the next step runs.";
+      }
+
+      if (node.type === "Copy") {
+        return "Copies the shared flow text to the clipboard.";
+      }
+
+      if (node.type === "Alert") {
+        return "Shows an alert using the shared flow text.";
+      }
+
+      return "This node is free right now. Choose a type when you are ready.";
+    }
+
+    function getTypeOptionsMarkup(selectedType) {
+      return NODE_TYPES.map((type) =>
+        `<option value="${type}" ${selectedType === type ? "selected" : ""}>${type}</option>`
+      ).join("");
+    }
+
+    function addHistory(kind, message, color) {
+      state.history.unshift({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        kind,
+        message,
+        color: color || "",
+        timestamp: new Date().toLocaleString()
+      });
+      state.history = state.history.slice(0, 80);
+    }
+
+    function getAutomationSnapshot() {
+      return {
+        workspaceText: state.workspaceText,
+        nodes: state.nodes.map((node) => ({
+          id: node.id,
+          title: node.title,
+          type: node.type,
+          color: node.color,
+          isInZone: node.isInZone,
+          activeOrder: node.activeOrder
+        })),
+        activeNodes: getOrderedActiveNodes().map((node) => ({
+          id: node.id,
+          title: node.title,
+          type: node.type,
+          color: node.color,
+          activeOrder: node.activeOrder
+        })),
+        history: state.history.slice(0, 10).map((item) => ({
+          kind: item.kind,
+          message: item.message,
+          timestamp: item.timestamp
+        }))
+      };
+    }
+
+    function appendBotMessage(role, text) {
+      const safeRole = ["user", "assistant", "system", "action", "error"].includes(role) ? role : "system";
+      const message = document.createElement("article");
+      message.className = `bot-message ${safeRole}`;
+
+      const label = document.createElement("span");
+      label.className = "bot-message-role";
+      label.textContent = safeRole;
+
+      const body = document.createElement("p");
+      body.className = "bot-message-text";
+      body.textContent = text || "";
+
+      message.append(label, body);
+      chatbotMessages.appendChild(message);
+      chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+      return message;
+    }
+
+    function clearAiChatMessages() {
+      if (chatbotMessages) {
+        chatbotMessages.innerHTML = "";
+      }
+
+      if (chatbotInput) {
+        chatbotInput.value = "";
+      }
+
+      pendingAutomationIntent = null;
+      appendBotMessage("system", "Chat cleared.");
+    }
+
+    function setChatLoading(isLoading) {
+      chatbotInput.disabled = isLoading;
+      chatbotSendBtn.disabled = isLoading;
+      chatbotStatus.textContent = isLoading ? "Thinking" : "Ready";
+      chatbotStatus.classList.toggle("loading", isLoading);
+    }
+
+    async function sendChatMessage() {
+      const userMessage = chatbotInput.value.trim();
+      if (!userMessage) {
+        return;
+      }
+
+      chatbotInput.value = "";
+      appendBotMessage("user", userMessage);
+      console.log("USER MESSAGE:", userMessage);
+
+      const pendingAction = handlePendingAutomationIntent(userMessage);
+      if (pendingAction) {
+        console.log("LOCAL INTENT:", pendingAction);
+        await executeAIActionList(pendingAction);
+        chatbotInput.focus();
+        return;
+      }
+
+      const localIntent = parseLocalAutomationIntent(userMessage);
+      console.log("LOCAL INTENT:", localIntent);
+      if (localIntent) {
+        await executeAIActionList(localIntent);
+        chatbotInput.focus();
+        return;
+      }
+
+      if (isAutomationLikeCommand(userMessage)) {
+        console.warn("Automation-like command reached backend:", userMessage);
+      }
+
+      setChatLoading(true);
+      const loadingMessage = appendBotMessage("system", "Waiting for AI...");
+
+      try {
+        const response = await fetch("http://localhost:3000/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            automationState: getAutomationSnapshot()
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Backend returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        loadingMessage.remove();
+        const parsed = parseAIResponse(data);
+
+        if (parsed.reply) {
+          appendBotMessage(parsed.error ? "error" : "assistant", parsed.reply);
+        }
+
+        if (!parsed.error && parsed.type === "automation_action" && parsed.action) {
+          await executeAIAction(parsed.action);
+        }
+      } catch (error) {
+        loadingMessage.remove();
+        appendBotMessage("assistant", "AI is unavailable right now, but local automation commands still work.");
+      } finally {
+        setChatLoading(false);
+        chatbotInput.focus();
+      }
+    }
+
+    function parseAIResponse(data) {
+      if (data && typeof data === "object" && !Array.isArray(data) && !("raw" in data)) {
+        return normalizeAIContract(data);
+      }
+
+      const raw = typeof data?.raw === "string" ? data.raw.trim() : "";
+      if (!raw) {
+        return {
+          type: "normal_chat",
+          reply: data?.error || "The AI returned an empty response.",
+          action: null,
+          error: Boolean(data?.error)
+        };
+      }
+
+      const cleaned = stripMarkdownJsonFence(raw);
+      const parsed = tryParseJsonObject(cleaned);
+      if (!parsed) {
+        return {
+          type: "normal_chat",
+          reply: raw,
+          action: null,
+          error: false,
+          invalidJson: true
+        };
+      }
+
+      return normalizeAIContract(parsed);
+    }
+
+    function stripMarkdownJsonFence(value) {
+      return String(value || "")
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+    }
+
+    function tryParseJsonObject(value) {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        const extracted = extractFirstJsonObject(value);
+        if (!extracted) {
+          return null;
+        }
+
+        try {
+          return JSON.parse(extracted);
+        } catch (innerError) {
+          return null;
+        }
+      }
+    }
+
+    function extractFirstJsonObject(value) {
+      let depth = 0;
+      let start = -1;
+      let inString = false;
+      let escaped = false;
+
+      for (let index = 0; index < value.length; index += 1) {
+        const char = value[index];
+
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+          } else if (char === "\\") {
+            escaped = true;
+          } else if (char === "\"") {
+            inString = false;
+          }
+          continue;
+        }
+
+        if (char === "\"") {
+          inString = true;
+          continue;
+        }
+
+        if (char === "{") {
+          if (depth === 0) {
+            start = index;
+          }
+          depth += 1;
+        } else if (char === "}") {
+          depth -= 1;
+          if (depth === 0 && start !== -1) {
+            return value.slice(start, index + 1);
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function normalizeAIContract(value) {
+      const action = value?.action && typeof value.action === "object"
+        ? {
+          name: typeof value.action.name === "string" ? value.action.name : "",
+          args: value.action.args && typeof value.action.args === "object" ? value.action.args : {}
+        }
+        : null;
+
+      return {
+        type: value?.type === "automation_action" ? "automation_action" : "normal_chat",
+        reply: typeof value?.reply === "string" ? value.reply : "",
+        action,
+        error: false
+      };
+    }
+
+    async function legacyExecuteAIAction(action) {
+      const actionName = typeof action?.name === "string" ? action.name : "";
+      const args = action?.args && typeof action.args === "object" ? action.args : {};
+      const supportedActions = new Set([
+        "normal_chat",
+        "create_node",
+        "set_workspace_text",
+        "run_linked_flow",
+        "run_node",
+        "update_node",
+        "delete_node",
+        "explain_current_flow",
+        "ask_clarification"
+      ]);
+
+      if (!supportedActions.has(actionName)) {
+        appendBotMessage("error", `Unsupported automation action: ${actionName || "unknown"}`);
+        return;
+      }
+
+      if (actionName === "normal_chat") {
+        return;
+      }
+
+      if (actionName === "ask_clarification") {
+        const question = typeof args.question === "string" && args.question.trim()
+          ? args.question.trim()
+          : "Which node type do you want? Log, Color, Uppercase, Copy, or Alert?";
+        if (/node|نود|type|نوع|Log|Color|Uppercase|Copy|Alert/i.test(question)) {
+          pendingAutomationIntent = { name: "create_node", args: {} };
+        }
+        appendAssistantIfNew(question);
+        return;
+      }
+
+      if (actionName === "create_node") {
+        const type = inferNodeType(args.type);
+        if (!type || type === "None") {
+          pendingAutomationIntent = { name: "create_node", args };
+          appendAssistantIfNew("Which node type do you want? Log, Color, Uppercase, Copy, or Alert?");
+          return;
+        }
+
+        const title = typeof args.title === "string" && args.title.trim()
+          ? args.title.trim()
+          : `${type} Node`;
+        const node = createNode(title, type);
+        state.nodes.push(node);
+
+        if (args.addToWorkspace === true) {
+          node.isInZone = true;
+          node.activeOrder = getNextActiveOrder();
+        }
+
+        addHistory("system", `AI created "${node.title}" (${node.type}) node.`);
+        saveState();
+        render();
+        appendBotMessage("action", `Created ${node.type} node ${node.id}.`);
+        return;
+      }
+
+      if (actionName === "set_workspace_text") {
+        const text = typeof args.text === "string" ? args.text : "";
+        state.workspaceText = text;
+        addHistory("state", `AI set workspace text to "${text}".`);
+        saveState();
+        render();
+        appendBotMessage("action", `Workspace text set to: ${text}`);
+        return;
+      }
+
+      if (actionName === "run_linked_flow") {
+        await runLinkedFlow();
+        appendBotMessage("action", "Ran the linked flow.");
+        return;
+      }
+
+      if (actionName === "run_node") {
+        const nodeId = Number(args.nodeId);
+        if (!Number.isInteger(nodeId)) {
+          appendBotMessage("error", "Run node needs a valid nodeId.");
+          return;
+        }
+        await runNode(nodeId);
+        appendBotMessage("action", `Ran node ${nodeId}.`);
+        return;
+      }
+
+      if (actionName === "update_node") {
+        const nodeId = Number(args.nodeId);
+        const node = state.nodes.find((item) => item.id === nodeId);
+        if (!node) {
+          appendBotMessage("error", `Node ${Number.isInteger(nodeId) ? nodeId : ""} was not found.`);
+          return;
+        }
+
+        if (typeof args.title === "string" && args.title.trim()) {
+          node.title = args.title.trim();
+        }
+
+        if (typeof args.type === "string" && args.type.trim()) {
+          const type = inferNodeType(args.type);
+          if (!type) {
+            appendBotMessage("error", `Invalid node type: ${args.type}`);
+            return;
+          }
+          node.type = type;
+          if (node.type !== "Color") {
+            node.color = "#ff7a18";
+          }
+        }
+
+        if (typeof args.color === "string" && /^#[0-9a-f]{6}$/i.test(args.color)) {
+          node.color = args.color;
+        }
+
+        addHistory("state", `AI updated "${node.title}".`);
+        saveState();
+        render();
+        appendBotMessage("action", `Updated node ${node.id}.`);
+        return;
+      }
+
+      if (actionName === "delete_node") {
+        const nodeId = Number(args.nodeId);
+        const nodeIndex = state.nodes.findIndex((item) => item.id === nodeId);
+        if (nodeIndex === -1) {
+          appendBotMessage("error", `Node ${Number.isInteger(nodeId) ? nodeId : ""} was not found.`);
+          return;
+        }
+
+        const [removedNode] = state.nodes.splice(nodeIndex, 1);
+        addHistory("system", `AI deleted "${removedNode.title}".`);
+        saveState();
+        render();
+        appendBotMessage("action", `Deleted node ${removedNode.id}.`);
+        return;
+      }
+
+      if (actionName === "explain_current_flow") {
+        appendBotMessage("assistant", buildCurrentFlowExplanation());
+      }
+    }
+
+    function appendAssistantIfNew(text) {
+      const messages = chatbotMessages.querySelectorAll(".bot-message.assistant .bot-message-text");
+      const lastAssistant = messages[messages.length - 1];
+      if (lastAssistant && lastAssistant.textContent === text) {
+        return;
+      }
+      appendBotMessage("assistant", text);
+    }
+
+    function inferNodeType(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+      if (!normalized) {
+        return "";
+      }
+
+      const directType = NODE_TYPES.find((type) => type.toLowerCase() === normalized);
+      if (directType) {
+        return directType;
+      }
+
+      const synonymMap = [
+        { type: "Log", terms: ["print", "طباعة", "اطبع", "log"] },
+        { type: "Color", terms: ["color", "لون"] },
+        { type: "Uppercase", terms: ["uppercase", "كبير", "حروف كبيرة"] },
+        { type: "Copy", terms: ["copy", "نسخ"] },
+        { type: "Alert", terms: ["alert", "تنبيه"] }
+      ];
+
+      const match = synonymMap.find((item) =>
+        item.terms.some((term) => normalized.includes(term))
+      );
+      return match ? match.type : "";
+    }
+
+    function getLocalAutomationFallback(message, parsed) {
+      if (parsed?.action || parsed?.error || parsed?.invalidJson) {
+        return null;
+      }
+
+      const text = message.trim();
+      const lower = text.toLowerCase();
+      const type = inferNodeType(text);
+      const asksCreateNode = /(create|add|make).*\bnode\b/i.test(text)
+        || /انشئ|أنشئ|اعمل|ضيف|أضف/.test(text) && /نود|node/i.test(text);
+
+      if (asksCreateNode) {
+        return {
+          name: "create_node",
+          args: type ? { type } : {}
+        };
+      }
+
+      const workspaceTextMatch = text.match(/(?:set workspace text to|workspace text to|حط النص|ضع النص|النص)\s+(.+)/i);
+      if (workspaceTextMatch?.[1]) {
+        return {
+          name: "set_workspace_text",
+          args: { text: workspaceTextMatch[1].trim() }
+        };
+      }
+
+      if (/run (the )?(linked )?flow/i.test(lower) || /شغل.*فلو|شغل الفلو/.test(text)) {
+        return { name: "run_linked_flow", args: {} };
+      }
+
+      const runNodeMatch = text.match(/(?:run|شغل)\s+(?:node|نود)?\s*(\d+)/i);
+      if (runNodeMatch?.[1]) {
+        return {
+          name: "run_node",
+          args: { nodeId: Number(runNodeMatch[1]) }
+        };
+      }
+
+      const deleteNodeMatch = text.match(/(?:delete|remove|احذف|امسح)\s+(?:node|نود)?\s*(\d+)/i);
+      if (deleteNodeMatch?.[1]) {
+        return {
+          name: "delete_node",
+          args: { nodeId: Number(deleteNodeMatch[1]) }
+        };
+      }
+
+      const updateNodeMatch = text.match(/(?:change|update|حول|غير)\s+(?:node|نود)\s*(\d+).*/i);
+      if (updateNodeMatch?.[1] && type) {
+        return {
+          name: "update_node",
+          args: {
+            nodeId: Number(updateNodeMatch[1]),
+            type
+          }
+        };
+      }
+
+      if (/explain.*flow/i.test(lower) || /اشرح.*فلو|اشرحلي الفلو/.test(text)) {
+        return { name: "explain_current_flow", args: {} };
+      }
+
+      return null;
+    }
+
+    function normalizeArabicEnglishText(text) {
+      return String(text || "")
+        .toLowerCase()
+        .replace(/[أإآ]/g, "ا")
+        .replace(/ة/g, "ه")
+        .replace(/[ًٌٍَُِّْ]/g, "")
+        .replace(/ى/g, "ي")
+        .replace(/[^\p{L}\p{N}#]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function detectNodeType(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      if (!normalized) {
+        return "";
+      }
+
+      const directType = NODE_TYPES.find((type) => type.toLowerCase() === normalized);
+      if (directType) {
+        return directType;
+      }
+
+      const synonymMap = [
+        { type: "Color", terms: ["لون", "color"] },
+        { type: "Log", terms: ["طباعة", "طباعه", "اطبع", "log", "print"] },
+        { type: "Uppercase", terms: ["كبير", "حروف كبيرة", "حروف كبيره", "uppercase"] },
+        { type: "Copy", terms: ["نسخ", "copy"] },
+        { type: "Alert", terms: ["تنبيه", "alert"] }
+      ];
+
+      const match = synonymMap.find((item) =>
+        item.terms.some((term) => normalized.includes(normalizeArabicEnglishText(term)))
+      );
+      return match ? match.type : "";
+    }
+
+    function detectColorValue(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const colors = [
+        { words: ["وردي", "زهري", "pink"], value: "#ec4899" },
+        { words: ["احمر", "أحمر", "red"], value: "#ef4444" },
+        { words: ["ازرق", "أزرق", "blue"], value: "#3b82f6" },
+        { words: ["اخضر", "أخضر", "green"], value: "#22c55e" },
+        { words: ["اصفر", "أصفر", "yellow"], value: "#eab308" },
+        { words: ["برتقالي", "orange"], value: "#ff7a18" },
+        { words: ["بنفسجي", "purple"], value: "#8b5cf6" },
+        { words: ["اسود", "أسود", "black"], value: "#111827" },
+        { words: ["ابيض", "أبيض", "white"], value: "#ffffff" },
+        { words: ["رمادي", "gray", "grey"], value: "#6b7280" },
+        { words: ["كحلي", "navy"], value: "#1e3a8a" },
+        { words: ["سماوي", "cyan", "sky"], value: "#22d3ee" }
+      ];
+
+      for (const color of colors) {
+        if (color.words.some((word) => normalized.includes(normalizeArabicEnglishText(word)))) {
+          return color.value;
+        }
+      }
+
+      const hexMatch = normalized.match(/#(?:[0-9a-f]{3}|[0-9a-f]{6})\b/i);
+      if (hexMatch) {
+        return hexMatch[0];
+      }
+
+      return null;
+    }
+
+    function detectTargetColorValue(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      const changeMarkers = [
+        "غيرها", "غيره", "غير", "بدل", "حول", "اجعل", "خلي",
+        "change", "set", "make", "to", "الى", "الي"
+      ];
+
+      const markerPositions = changeMarkers
+        .map((marker) => {
+          const normalizedMarker = normalizeArabicEnglishText(marker);
+          const index = normalized.indexOf(normalizedMarker);
+          return index >= 0 ? { index, marker: normalizedMarker } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.index - a.index);
+
+      for (const item of markerPositions) {
+        const color = detectColorValue(normalized.slice(item.index + item.marker.length));
+        if (color) {
+          return color;
+        }
+      }
+
+      return detectColorValue(normalized);
+    }
+
+    function isCreateNodeCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      const createWords = [
+        "انشئ", "اعمل", "سوي", "ضيف", "ضيفلي", "ضف", "ضفلي", "اضف",
+        "create", "make", "add", "new"
+      ];
+      const nodeWords = ["عقده", "عقدة", "نود", "node"];
+
+      return createWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && nodeWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function wantsWorkspace(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      return [
+        "مساحه التفعيل",
+        "مساحة التفعيل",
+        "منطقه التفعيل",
+        "منطقة التفعيل",
+        "الوورك سبيس",
+        "ورك سبيس",
+        "workspace",
+        "activation workspace",
+        "الفلو",
+        "للفلو",
+        "flow"
+      ].some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function hasStrongCreateNodeCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      return normalized.includes("انشئ")
+        || normalized.includes("اعمل")
+        || normalized.includes("سوي")
+        || /\b(create|make|new)\b/.test(normalized)
+        || /\badd\s+new\b/.test(normalized);
+    }
+
+    function hasExplicitExistingNodeReference(text, requestedType, requestedColor) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      if (/(?:node|نود|عقده)\s*\d+/i.test(normalized)) {
+        return true;
+      }
+
+      const refersToLastCreated =
+        normalized.includes("ضيفها") ||
+        normalized.includes("حطها") ||
+        normalized.includes("انقلها") ||
+        normalized.includes("add it") ||
+        normalized.includes("put it") ||
+        normalized.includes("move it");
+
+      if (refersToLastCreated) {
+        return true;
+      }
+
+      if (
+        normalized.includes("الموجوده") ||
+        normalized.includes("موجوده") ||
+        normalized.includes("existing")
+      ) {
+        return true;
+      }
+
+      return false;
+    }
+
+    function isAddTypedNodeToFlowCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const addWords = [
+        "ضيف", "ضف", "ضفلي", "اضف", "أضف", "ضيفلي", "حط", "ضع",
+        "add", "put"
+      ];
+
+      const nodeWords = [
+        "عقده", "عقدة", "نود", "node"
+      ];
+
+      const flowWords = [
+        "الفلو", "flow",
+        "للفلو",
+        "مساحه التفعيل", "مساحة التفعيل",
+        "منطقه التفعيل", "منطقة التفعيل",
+        "الوورك سبيس", "ورك سبيس",
+        "workspace", "activation workspace"
+      ];
+
+      return addWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && nodeWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && flowWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function findInactiveNodeByType(type) {
+      return state.nodes.find((node) => node.type === type && !node.isInZone) || null;
+    }
+
+    function buildCreateOrAddTypedNodeToFlowAction(text) {
+      const type = detectNodeType(text);
+
+      if (!type) {
+        return {
+          name: "ask_clarification",
+          args: {
+            question: "أي نوع عقدة بدك أضيف للفلو؟ Log, Color, Uppercase, Copy, Alert"
+          }
+        };
+      }
+
+      const existingNode = findInactiveNodeByType(type);
+      if (existingNode) {
+        return {
+          name: "add_node_to_workspace",
+          args: {
+            nodeId: existingNode.id
+          }
+        };
+      }
+
+      const color = type === "Color" && typeof detectColorValue === "function"
+        ? detectColorValue(text)
+        : null;
+
+      const args = {
+        type,
+        title: `${type} Node`,
+        addToWorkspace: true
+      };
+
+      if (color) {
+        args.color = color;
+      }
+
+      return {
+        name: "create_node",
+        args
+      };
+    }
+
+    function isAutomationLikeCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      return [
+        "عقده", "عقدة", "نود", "node",
+        "الفلو", "flow", "workspace", "مساحه التفعيل",
+        "ضيف", "ضف", "اضف", "حط", "شغل", "احذف",
+        "create", "add", "put", "run", "delete"
+      ].some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function isAddToWorkspaceCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const addWords = [
+        "ضيف", "ضيفلي", "ضف", "ضفلي", "اضف", "أضف", "حط", "ضع", "انقل",
+        "add", "put", "move"
+      ];
+
+      const workspaceWords = [
+        "مساحة التفعيل",
+        "منطقة التفعيل",
+        "الوورك سبيس",
+        "ورك سبيس",
+        "workspace",
+        "activation workspace",
+        "الفلو",
+        "للفلو",
+        "flow"
+      ];
+
+      return addWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && workspaceWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function findExistingNodeForCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const idMatch = normalized.match(/(?:node|نود|عقده)\s*(\d+)/i);
+      if (idMatch) {
+        const nodeId = Number(idMatch[1]);
+        return state.nodes.find((node) => node.id === nodeId) || null;
+      }
+
+      const refersToLastCreated =
+        normalized.includes("ضيفها") ||
+        normalized.includes("حطها") ||
+        normalized.includes("انقلها") ||
+        normalized.includes("add it") ||
+        normalized.includes("put it") ||
+        normalized.includes("move it");
+
+      if (refersToLastCreated && lastCreatedNodeId) {
+        return state.nodes.find((node) => node.id === lastCreatedNodeId) || null;
+      }
+
+      const requestedType = detectNodeType(normalized);
+      if (requestedType) {
+        const inactiveMatch = state.nodes.find(
+          (node) => node.type === requestedType && !node.isInZone
+        );
+
+        if (inactiveMatch) {
+          return inactiveMatch;
+        }
+
+        return state.nodes.find((node) => node.type === requestedType) || null;
+      }
+
+      return null;
+    }
+
+    function getActiveNodesInOrder() {
+      return state.nodes
+        .filter((node) => node.isInZone)
+        .sort((a, b) => {
+          const orderA = typeof a.activeOrder === "number" ? a.activeOrder : Number.MAX_SAFE_INTEGER;
+          const orderB = typeof b.activeOrder === "number" ? b.activeOrder : Number.MAX_SAFE_INTEGER;
+          return orderA - orderB;
+        });
+    }
+
+    function findActiveNodeByType(type) {
+      return getActiveNodesInOrder().find((node) => node.type === type) || null;
+    }
+
+    function findActiveNodeByStep(stepIndex) {
+      const index = Number(stepIndex);
+      if (!Number.isInteger(index)) {
+        return null;
+      }
+      return getActiveNodesInOrder()[index - 1] || null;
+    }
+
+    function applyActiveNodeOrder(orderedNodes) {
+      orderedNodes.forEach((node, index) => {
+        node.isInZone = true;
+        node.activeOrder = index + 1;
+      });
+      saveState();
+      render();
+    }
+
+    function getActiveOrderDebugSnapshot() {
+      return getActiveNodesInOrder().map((node) => ({
+        id: node.id,
+        type: node.type,
+        order: node.activeOrder
+      }));
+    }
+
+    function moveActiveNode(nodeId, targetNodeId = null, position = "last") {
+      const activeNodes = getActiveNodesInOrder();
+      const originalOrder = activeNodes.map((node) => node.id).join(",");
+      const sourceIndex = activeNodes.findIndex((node) => node.id === nodeId);
+
+      if (sourceIndex === -1) {
+        appendBotMessage("error", `Node ${nodeId} is not in the activation workspace.`);
+        return false;
+      }
+
+      const [sourceNode] = activeNodes.splice(sourceIndex, 1);
+
+      if (position === "first") {
+        activeNodes.unshift(sourceNode);
+      } else if (position === "last") {
+        activeNodes.push(sourceNode);
+      } else {
+        const targetIndex = activeNodes.findIndex((node) => node.id === targetNodeId);
+
+        if (targetIndex === -1) {
+          appendBotMessage("error", `Target node ${targetNodeId} was not found in the activation workspace.`);
+          return false;
+        }
+
+        const insertIndex = position === "before" ? targetIndex : targetIndex + 1;
+        activeNodes.splice(insertIndex, 0, sourceNode);
+      }
+
+      const nextOrder = activeNodes.map((node) => node.id).join(",");
+      if (nextOrder === originalOrder) {
+        appendBotMessage("assistant", `Node ${sourceNode.id} is already in that position.`);
+        return false;
+      }
+
+      addHistory("system", `"${sourceNode.title || sourceNode.type}" moved in the activation workspace.`);
+      applyActiveNodeOrder(activeNodes);
+      appendBotMessage("action", `Done. I moved node ${sourceNode.id} in the activation workspace.`);
+      return true;
+    }
+
+    function moveActiveNodeToIndex(fromIndex, toIndex) {
+      const activeNodes = getActiveNodesInOrder();
+      console.log("Before move:", getActiveOrderDebugSnapshot());
+      console.log("Move:", { fromIndex, toIndex });
+
+      if (!activeNodes.length) {
+        appendBotMessage("error", "ما في عقد داخل مساحة التفعيل لإعادة ترتيبها.");
+        return false;
+      }
+
+      const from = Number(fromIndex);
+      const to = Number(toIndex);
+
+      if (!Number.isInteger(from) || !Number.isInteger(to)) {
+        appendBotMessage("error", "رقم الخطوة غير صالح.");
+        return false;
+      }
+
+      if (from < 1 || from > activeNodes.length) {
+        appendBotMessage("error", `الخطوة ${from} غير موجودة. عدد الخطوات الحالي هو ${activeNodes.length}.`);
+        return false;
+      }
+
+      if (to < 1 || to > activeNodes.length) {
+        appendBotMessage("error", `المكان ${to} غير موجود. عدد الخطوات الحالي هو ${activeNodes.length}.`);
+        return false;
+      }
+
+      if (from === to) {
+        appendBotMessage("assistant", `العقدة موجودة بالفعل في المكان ${to}.`);
+        return true;
+      }
+
+      const [movedNode] = activeNodes.splice(from - 1, 1);
+      activeNodes.splice(to - 1, 0, movedNode);
+
+      addHistory("system", `"${movedNode.title || movedNode.type}" moved from step ${from} to step ${to}.`);
+      applyActiveNodeOrder(activeNodes);
+      console.log("After move:", getActiveOrderDebugSnapshot());
+      appendBotMessage("action", `تم نقل العقدة من الخطوة ${from} إلى المكان ${to}.`);
+      return true;
+    }
+
+    function moveActiveNodeByTypeToIndex(type, toIndex) {
+      const nodeType = detectNodeType(type);
+      const activeNodes = getActiveNodesInOrder();
+      const sourceIndex = activeNodes.findIndex((node) => node.type === nodeType);
+
+      if (sourceIndex === -1) {
+        appendBotMessage("error", `ما لقيت عقدة من نوع ${type} داخل الفلو.`);
+        return false;
+      }
+
+      return moveActiveNodeToIndex(sourceIndex + 1, Number(toIndex));
+    }
+
+    function moveActiveNodeByTypeLeft(type) {
+      const nodeType = detectNodeType(type);
+      const activeNodes = getActiveNodesInOrder();
+      const sourceIndex = activeNodes.findIndex((node) => node.type === nodeType);
+
+      if (sourceIndex === -1) {
+        appendBotMessage("error", `ما لقيت عقدة من نوع ${type} داخل الفلو.`);
+        return false;
+      }
+
+      if (sourceIndex === 0) {
+        appendBotMessage("assistant", "العقدة موجودة بالفعل في أقصى اليسار / البداية.");
+        return true;
+      }
+
+      return moveActiveNodeToIndex(sourceIndex + 1, sourceIndex);
+    }
+
+    function changeActiveNodeColor(nodeId, color) {
+      console.log("Changing color:", { nodeId, color });
+      const node = state.nodes.find((item) => item.id === Number(nodeId));
+
+      if (!node) {
+        appendBotMessage("error", `I could not find node ${nodeId}.`);
+        return false;
+      }
+
+      if (!node.isInZone) {
+        appendBotMessage("error", `Node ${nodeId} is not inside the activation workspace.`);
+        return false;
+      }
+
+      if (node.type !== "Color") {
+        appendBotMessage("error", `Node ${nodeId} is not a Color node.`);
+        return false;
+      }
+
+      if (!/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)) {
+        appendBotMessage("error", "Invalid color value.");
+        return false;
+      }
+
+      node.color = color;
+      addHistory("state", `"${node.title || "Color Node"}" color was changed to ${color} by chatbot.`);
+      saveState();
+      render();
+      appendBotMessage("action", `تم تغيير لون عقدة اللون إلى ${color}.`);
+      return true;
+    }
+
+    function detectOrdinal(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const ordinals = [
+        { words: ["الاول", "اول", "first", "1st"], value: 1 },
+        { words: ["الثاني", "تاني", "second", "2nd"], value: 2 },
+        { words: ["الثالث", "تالت", "third", "3rd"], value: 3 },
+        { words: ["الرابع", "رابع", "fourth", "4th"], value: 4 },
+        { words: ["الخامس", "خامس", "fifth", "5th"], value: 5 }
+      ];
+
+      for (const item of ordinals) {
+        if (item.words.some((word) => normalized.includes(normalizeArabicEnglishText(word)))) {
+          return item.value;
+        }
+      }
+
+      const stepMatch = normalized.match(/(?:step|خطوه|مرحله)\s*(\d+)/i);
+      if (stepMatch) {
+        return Number(stepMatch[1]);
+      }
+
+      return null;
+    }
+
+    function findActiveNodeByReference(text, options = {}) {
+      const normalized = normalizeArabicEnglishText(text);
+      const activeNodes = getActiveNodesInOrder();
+
+      const idMatch = normalized.match(/(?:node|نود|عقده|عقدة)\s*(\d+)/i);
+      if (idMatch) {
+        const id = Number(idMatch[1]);
+        return activeNodes.find((node) => node.id === id) || null;
+      }
+
+      const ordinal = detectOrdinal(normalized);
+      if (ordinal && options.allowOrdinal !== false) {
+        return activeNodes[ordinal - 1] || null;
+      }
+
+      const type = typeof detectNodeType === "function" ? detectNodeType(normalized) : null;
+      if (type) {
+        if (options.preferFromEnd) {
+          return [...activeNodes].reverse().find((node) => node.type === type) || null;
+        }
+        return activeNodes.find((node) => node.type === type) || null;
+      }
+
+      return null;
+    }
+
+    function findActiveNodeFromDescriptor(descriptor, options = {}) {
+      const activeNodes = getActiveNodesInOrder();
+
+      if (!descriptor || typeof descriptor !== "object") {
+        return null;
+      }
+
+      const explicitId = Number(descriptor.nodeId ?? descriptor.id);
+      if (Number.isInteger(explicitId)) {
+        return activeNodes.find((node) => node.id === explicitId) || null;
+      }
+
+      const ordinal = Number(descriptor.ordinal ?? descriptor.step ?? descriptor.order);
+      if (Number.isInteger(ordinal) && ordinal > 0) {
+        return activeNodes[ordinal - 1] || null;
+      }
+
+      if (typeof descriptor.type === "string" && descriptor.type.trim()) {
+        const type = detectNodeType(descriptor.type);
+        if (type) {
+          if (options.excludeNodeId) {
+            return activeNodes.find((node) => node.type === type && node.id !== options.excludeNodeId) || null;
+          }
+          return activeNodes.find((node) => node.type === type) || null;
+        }
+      }
+
+      const referenceText = descriptor.text || descriptor.reference || descriptor.label || descriptor.name;
+      if (typeof referenceText === "string" && referenceText.trim()) {
+        const node = findActiveNodeByReference(referenceText, options);
+        if (node && (!options.excludeNodeId || node.id !== options.excludeNodeId)) {
+          return node;
+        }
+      }
+
+      return null;
+    }
+
+    function arabicOrdinalToNumber(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const map = [
+        { words: ["الاول", "اول", "الاولى", "اولا", "first"], value: 1 },
+        { words: ["الثاني", "تاني", "الثانيه", "second"], value: 2 },
+        { words: ["الثالث", "تالت", "الثالثه", "third"], value: 3 },
+        { words: ["الرابع", "رابع", "الرابعه", "fourth"], value: 4 },
+        { words: ["الخامس", "خامس", "الخامسه", "fifth"], value: 5 }
+      ];
+
+      for (const item of map) {
+        if (item.words.some((word) => normalized.includes(normalizeArabicEnglishText(word)))) {
+          return item.value;
+        }
+      }
+
+      return null;
+    }
+
+    function parseMoveStepToPositionCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const moveWords = [
+        "انقل", "نقل", "حط", "ضع", "خلي",
+        "move", "put", "place"
+      ];
+
+      const stepWords = [
+        "خطوه", "خطوة", "step", "العقده", "العقدة", "node"
+      ];
+
+      const positionWords = [
+        "مكان", "المكان", "موضع", "الموضع", "position", "place", "step", "خطوه", "خطوة"
+      ];
+
+      const hasMove = moveWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+      const hasStep = stepWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+      const hasPosition = positionWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+
+      if (!hasMove || !hasStep || !hasPosition) {
+        return null;
+      }
+
+      const numericPatterns = [
+        /(?:خطوه|خطوة|step)\s*(\d+).*?(?:مكان|المكان|موضع|الموضع|position|place|step|خطوه|خطوة)\s*(\d+)/i,
+        /(?:العقده|العقدة|node).*?(?:خطوه|خطوة|step)\s*(\d+).*?(?:مكان|المكان|موضع|الموضع|position|place)\s*(\d+)/i
+      ];
+
+      for (const pattern of numericPatterns) {
+        const match = normalized.match(pattern);
+        if (match) {
+          return {
+            name: "move_active_node_to_index",
+            args: {
+              fromIndex: Number(match[1]),
+              toIndex: Number(match[2])
+            }
+          };
+        }
+      }
+
+      const directSwapLikeMatch = normalized.match(/(?:حط|ضع|انقل|move|put)\s*(?:خطوه|خطوة|step)\s*(\d+).*?(?:مكان|بدل|position|to)\s*(?:خطوه|خطوة|step)?\s*(\d+)/i);
+      if (directSwapLikeMatch) {
+        return {
+          name: "move_active_node_to_index",
+          args: {
+            fromIndex: Number(directSwapLikeMatch[1]),
+            toIndex: Number(directSwapLikeMatch[2])
+          }
+        };
+      }
+
+      let fromIndex = null;
+      let toIndex = null;
+
+      const fromMatch = normalized.match(/(?:العقده|العقدة|خطوه|خطوة|step)\s+([^\s]+)/i);
+      const toMatch = normalized.match(/(?:مكان|المكان|موضع|الموضع|position)\s+([^\s]+)/i);
+
+      if (fromMatch) {
+        fromIndex = arabicOrdinalToNumber(fromMatch[1]);
+      }
+
+      if (toMatch) {
+        toIndex = arabicOrdinalToNumber(toMatch[1]);
+      }
+
+      if (fromIndex && toIndex) {
+        return {
+          name: "move_active_node_to_index",
+          args: { fromIndex, toIndex }
+        };
+      }
+
+      return null;
+    }
+
+    function isColorChangeCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const changeWords = ["غير", "غيّر", "بدل", "حول", "اجعل", "خلي", "change", "set", "make"];
+      const colorWords = ["لون", "لونها", "color"];
+
+      return changeWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && colorWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && Boolean(detectTargetColorValue(normalized));
+    }
+
+    function parseColorChangeCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      const color = detectTargetColorValue(normalized);
+
+      if (!color) {
+        return null;
+      }
+
+      let targetNode = null;
+      const stepMatch = normalized.match(/(?:خطوه|خطوة|step)\s*(\d+)/i);
+
+      if (stepMatch) {
+        targetNode = findActiveNodeByStep(Number(stepMatch[1]));
+      }
+
+      if (!targetNode && (normalized.includes("لون") || normalized.includes("color"))) {
+        targetNode = findActiveNodeByType("Color");
+      }
+
+      if (!targetNode) {
+        return {
+          name: "ask_clarification",
+          args: {
+            question: "ما لقيت عقدة لون داخل الفلو. أضيف عقدة لون جديدة؟"
+          }
+        };
+      }
+
+      return {
+        name: "change_active_node_color",
+        args: {
+          nodeId: targetNode.id,
+          color
+        }
+      };
+    }
+
+    function parseMoveTypeToIndexCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const hasMoveWord =
+        normalized.includes("انقل") ||
+        normalized.includes("نقل") ||
+        normalized.includes("بدل") ||
+        normalized.includes("حط") ||
+        normalized.includes("move") ||
+        normalized.includes("put");
+
+      if (!hasMoveWord) {
+        return null;
+      }
+
+      const type = detectNodeType(normalized);
+      if (!type) {
+        return null;
+      }
+
+      const fromToMatch = normalized.match(
+        /(?:من)?\s*(?:خطوه|خطوة|step)\s*(\d+).*?(?:الى|إلى|ل|to|مكان|المكان)\s*(?:خطوه|خطوة|step)?\s*(\d+)/i
+      );
+
+      if (fromToMatch) {
+        return {
+          name: "move_active_node_to_index",
+          args: {
+            fromIndex: Number(fromToMatch[1]),
+            toIndex: Number(fromToMatch[2])
+          }
+        };
+      }
+
+      if (
+        normalized.includes("يسار") ||
+        normalized.includes("اليسار") ||
+        normalized.includes("left") ||
+        normalized.includes("قبل") ||
+        normalized.includes("البدايه") ||
+        normalized.includes("البداية")
+      ) {
+        return {
+          name: "move_active_node_by_type_left",
+          args: {
+            type
+          }
+        };
+      }
+
+      return null;
+    }
+
+    function shouldBlockGenericUpdateNode(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      return isColorChangeCommand(text)
+        || Boolean(parseMoveTypeToIndexCommand(text))
+        || [
+          "لونها",
+          "غيرها",
+          "غير لون",
+          "انقل",
+          "بدل",
+          "اليسار",
+          "اليمين",
+          "خطوه",
+          "خطوة",
+          "step"
+        ].some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function isReorderCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+
+      const moveWords = [
+        "حط", "خلي", "انقل", "نقل", "رتب", "قدم", "اخر",
+        "move", "put", "place", "reorder", "make"
+      ];
+
+      const orderWords = [
+        "قبل", "بعد", "بالاول", "بالأول", "اول", "اخر", "بالاخر",
+        "before", "after", "first", "last"
+      ];
+
+      return moveWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)))
+        && orderWords.some((word) => normalized.includes(normalizeArabicEnglishText(word)));
+    }
+
+    function detectNodeTypeNearOrderWord(normalized, orderWords) {
+      const typeChecks = [
+        { type: "Log", words: ["طباعه", "طباعة", "log", "print"] },
+        { type: "Color", words: ["لون", "color"] },
+        { type: "Uppercase", words: ["uppercase", "حروف كبيره", "حروف كبيرة"] },
+        { type: "Copy", words: ["copy", "نسخ"] },
+        { type: "Alert", words: ["alert", "تنبيه"] }
+      ];
+
+      for (const orderWord of orderWords) {
+        const normalizedOrder = normalizeArabicEnglishText(orderWord);
+        const index = normalized.indexOf(normalizedOrder);
+        if (index === -1) {
+          continue;
+        }
+        const afterOrderWord = normalized.slice(index + normalizedOrder.length);
+        const match = typeChecks.find((item) =>
+          item.words.some((word) => afterOrderWord.includes(normalizeArabicEnglishText(word)))
+        );
+        if (match) {
+          return match.type;
+        }
+      }
+
+      return null;
+    }
+
+    function parseReorderCommand(text) {
+      const normalized = normalizeArabicEnglishText(text);
+      const activeNodes = getActiveNodesInOrder();
+
+      if (!activeNodes.length) {
+        return {
+          name: "ask_clarification",
+          args: {
+            question: "ما في عقد داخل مساحة التفعيل لإعادة ترتيبها."
+          }
+        };
+      }
+
+      const hasBefore = normalized.includes("قبل") || normalized.includes("before");
+      const hasAfter = normalized.includes("بعد") || normalized.includes("after");
+      const hasFirst = normalized.includes("بالاول") || normalized.includes("اول") || normalized.includes("first");
+      const hasLast = normalized.includes("بالاخر") || normalized.includes("اخر") || normalized.includes("last");
+
+      const typeChecks = [
+        { type: "Log", words: ["طباعه", "طباعة", "log", "print"] },
+        { type: "Color", words: ["لون", "color"] },
+        { type: "Uppercase", words: ["uppercase", "حروف كبيره", "حروف كبيرة"] },
+        { type: "Copy", words: ["copy", "نسخ"] },
+        { type: "Alert", words: ["alert", "تنبيه"] }
+      ];
+
+      let sourceType = null;
+      const firstOrderIndex = ["قبل", "بعد", "before", "after", "بالاول", "بالاخر", "first", "last"]
+        .map((word) => normalized.indexOf(normalizeArabicEnglishText(word)))
+        .filter((index) => index >= 0)
+        .sort((a, b) => a - b)[0] ?? normalized.length;
+      const sourceSegment = normalized.slice(0, firstOrderIndex);
+      const sourceTypeMatch = typeChecks.find((item) =>
+        item.words.some((word) => sourceSegment.includes(normalizeArabicEnglishText(word)))
+      );
+      if (sourceTypeMatch) {
+        sourceType = sourceTypeMatch.type;
+      }
+
+      let targetType = null;
+      if (hasBefore) {
+        targetType = detectNodeTypeNearOrderWord(normalized, ["قبل", "before"]);
+      } else if (hasAfter) {
+        targetType = detectNodeTypeNearOrderWord(normalized, ["بعد", "after"]);
+      }
+
+      let sourceNode = null;
+      if (sourceType) {
+        sourceNode = activeNodes.find((node) => node.type === sourceType) || null;
+      }
+
+      if (!sourceNode) {
+        sourceNode = findActiveNodeByReference(text);
+      }
+
+      if (!sourceNode) {
+        return {
+          name: "ask_clarification",
+          args: {
+            question: "ما قدرت أحدد أي عقدة بدك أنقل. اذكري نوعها أو رقمها."
+          }
+        };
+      }
+
+      if (hasFirst && !hasBefore && !hasAfter) {
+        return {
+          name: "move_active_node",
+          args: {
+            nodeId: sourceNode.id,
+            position: "first"
+          }
+        };
+      }
+
+      if (hasLast && !hasBefore && !hasAfter) {
+        return {
+          name: "move_active_node",
+          args: {
+            nodeId: sourceNode.id,
+            position: "last"
+          }
+        };
+      }
+
+      let targetNode = null;
+      if (targetType) {
+        targetNode = activeNodes.find((node) => node.type === targetType && node.id !== sourceNode.id) || null;
+      }
+
+      if (!targetNode && (hasBefore || hasAfter)) {
+        const idMatches = [...normalized.matchAll(/(?:node|نود|عقده|عقدة)\s*(\d+)/gi)]
+          .map((match) => Number(match[1]))
+          .filter((id) => id !== sourceNode.id);
+        if (idMatches.length) {
+          targetNode = activeNodes.find((node) => node.id === idMatches[0]) || null;
+        }
+      }
+
+      if (!targetNode && (hasBefore || hasAfter) && (normalized.includes("الاولى") || normalized.includes("الاول") || normalized.includes("first"))) {
+        targetNode = activeNodes.find((node) => node.id !== sourceNode.id) || null;
+      }
+
+      if ((hasBefore || hasAfter) && !targetNode) {
+        return {
+          name: "ask_clarification",
+          args: {
+            question: "ما قدرت أحدد العقدة الهدف التي تريدين النقل قبلها أو بعدها."
+          }
+        };
+      }
+
+      return {
+        name: "move_active_node",
+        args: {
+          nodeId: sourceNode.id,
+          targetNodeId: targetNode ? targetNode.id : null,
+          position: hasBefore ? "before" : hasAfter ? "after" : hasFirst ? "first" : "last"
+        }
+      };
+    }
+
+    function parseLocalAutomationIntent(text) {
+      const original = String(text || "").trim();
+      const normalized = normalizeArabicEnglishText(original);
+      if (!normalized) {
+        return null;
+      }
+
+      const type = detectNodeType(original);
+      const color = detectColorValue(original);
+      const nodeId = extractNodeId(normalized);
+      const wantsRunFlow = /\b(run|start)\b.*\b(flow|linked flow)\b/.test(normalized)
+        || normalized.includes("شغل الفلو")
+        || normalized.includes("شغل المسار");
+      const wantsExplainFlow = /\bexplain\b.*\b(flow|current flow)\b/.test(normalized)
+        || normalized.includes("اشرح الفلو")
+        || normalized.includes("اشرحلي الفلو")
+        || normalized.includes("اشرح المسار")
+        || normalized.includes("اشرحلي المسار");
+      const addToWorkspace = wantsWorkspace(original);
+      const wantsCreateNode = isCreateNodeCommand(original);
+
+      if (isColorChangeCommand(original)) {
+        return parseColorChangeCommand(original);
+      }
+
+      const moveTypeIntent = parseMoveTypeToIndexCommand(original);
+      if (moveTypeIntent) {
+        return moveTypeIntent;
+      }
+
+      const moveStepAction = parseMoveStepToPositionCommand(original);
+      if (moveStepAction) {
+        return moveStepAction;
+      }
+
+      if (isReorderCommand(original)) {
+        return parseReorderCommand(original);
+      }
+
+      if (
+        isAddToWorkspaceCommand(original) &&
+        hasExplicitExistingNodeReference(original, type, color)
+      ) {
+        const node = findExistingNodeForCommand(original);
+
+        if (node) {
+          return {
+            name: "add_node_to_workspace",
+            args: { nodeId: node.id }
+          };
+        }
+
+        const requestedType = detectNodeType(original);
+        if (requestedType) {
+          return {
+            name: "ask_clarification",
+            args: {
+              question: `ما لقيت عقدة من نوع ${requestedType}. بدك أنشئ واحدة جديدة وأضيفها لمساحة التفعيل؟`
+            }
+          };
+        }
+
+        return {
+          name: "ask_clarification",
+          args: {
+            question: "أي عقدة بدك أضيف لمساحة التفعيل؟ اذكري رقم العقدة أو نوعها مثل Color أو Log."
+          }
+        };
+      }
+
+      if (isAddTypedNodeToFlowCommand(original)) {
+        return buildCreateOrAddTypedNodeToFlowAction(original);
+      }
+
+      if (wantsRunFlow && !wantsCreateNode) {
+        return { name: "run_linked_flow", args: {} };
+      }
+
+      const setTextMatch = original.match(/(?:set workspace text to|set text to|workspace text to|حط النص|غير النص الى|غير النص إلى|ضع النص)\s+(.+)/i);
+      if (setTextMatch?.[1]) {
+        return {
+          name: "set_workspace_text",
+          args: { text: setTextMatch[1].trim() }
+        };
+      }
+
+      const addExistingNode = nodeId && (
+        /\b(add|put|move)\b.*\bnode\b.*\b(workspace|activation workspace|flow)\b/.test(normalized)
+        || normalized.includes(`ضيف نود ${nodeId}`)
+        || normalized.includes(`حط نود ${nodeId}`)
+      ) && addToWorkspace;
+      if (addExistingNode) {
+        return {
+          name: "add_node_to_workspace",
+          args: { nodeId }
+        };
+      }
+
+      const addLastCreated = lastCreatedNodeId && !wantsCreateNode && (
+        normalized.includes("ضيفها للفلو")
+        || normalized.includes("حطها بالوورك سبيس")
+        || normalized.includes("حطها بالورك سبيس")
+        || normalized.includes("ضيفها على الوورك سبيس")
+        || /\badd it\b.*\b(flow|workspace)\b/.test(normalized)
+        || /\bput it\b.*\b(flow|workspace)\b/.test(normalized)
+      );
+      if (addLastCreated) {
+        return {
+          name: "add_node_to_workspace",
+          args: { nodeId: lastCreatedNodeId }
+        };
+      }
+
+      if (nodeId && (normalized.includes("شغل نود") || /\brun\s+node\b/.test(normalized))) {
+        return {
+          name: "run_node",
+          args: { nodeId }
+        };
+      }
+
+      if (nodeId && (normalized.includes("احذف نود") || /\b(delete|remove)\s+node\b/.test(normalized))) {
+        return {
+          name: "delete_node",
+          args: { nodeId }
+        };
+      }
+
+      if (
+        nodeId &&
+        type &&
+        !shouldBlockGenericUpdateNode(original) &&
+        (/\b(change|update)\s+node\b/.test(normalized) || normalized.includes("غير نود") || normalized.includes("حول نود"))
+      ) {
+        return {
+          name: "update_node",
+          args: {
+            nodeId,
+            type
+          }
+        };
+      }
+
+      if (wantsExplainFlow) {
+        return { name: "explain_current_flow", args: {} };
+      }
+
+      if (wantsCreateNode) {
+        if (!type) {
+          pendingAutomationIntent = { name: "create_node", args: { addToWorkspace } };
+          return {
+            name: "ask_clarification",
+            args: {
+              question: "أي نوع نود بدك؟ Log, Color, Uppercase, Copy, Alert",
+              pendingIntent: { name: "create_node", args: { addToWorkspace } }
+            }
+          };
+        }
+
+        const createAction = {
+          name: "create_node",
+          args: {
+            type,
+            title: `${type} Node`,
+            ...(type === "Color" && color ? { color } : {}),
+            addToWorkspace: addToWorkspace || wantsRunFlow
+          }
+        };
+
+        if (wantsRunFlow) {
+          return [
+            createAction,
+            { name: "run_linked_flow", args: {} }
+          ];
+        }
+
+        return createAction;
+      }
+
+      if (wantsRunFlow) {
+        return { name: "run_linked_flow", args: {} };
+      }
+
+      if (wantsExplainFlow) {
+        return { name: "explain_current_flow", args: {} };
+      }
+
+      return null;
+    }
+
+    function handlePendingAutomationIntent(text) {
+      if (!pendingAutomationIntent) {
+        return null;
+      }
+
+      const type = detectNodeType(text);
+      if (pendingAutomationIntent.name === "create_node" && type) {
+        const color = detectColorValue(text);
+        const action = {
+          name: "create_node",
+          args: {
+            ...pendingAutomationIntent.args,
+            type,
+            title: pendingAutomationIntent.args.title || `${type} Node`,
+            ...(type === "Color" && color ? { color } : {})
+          }
+        };
+        pendingAutomationIntent = null;
+        return action;
+      }
+
+      return {
+        name: "ask_clarification",
+        args: {
+          question: "أي نوع نود بدك؟ Log, Color, Uppercase, Copy, Alert",
+          pendingIntent: pendingAutomationIntent
+        }
+      };
+    }
+
+    async function executeAIActionList(actions) {
+      const actionList = Array.isArray(actions) ? actions : [actions];
+      for (const action of actionList) {
+        await executeAIAction(action);
+      }
+    }
+
+    async function executeAIAction(action) {
+      const actionName = typeof action?.name === "string" ? action.name : "";
+      const args = action?.args && typeof action.args === "object" ? action.args : {};
+      const supportedActions = new Set([
+        "normal_chat",
+        "create_node",
+        "add_node_to_workspace",
+        "change_active_node_color",
+        "move_active_node",
+        "move_active_node_to_index",
+        "move_active_node_by_type_left",
+        "reorder_active_node",
+        "set_workspace_text",
+        "run_linked_flow",
+        "run_node",
+        "update_node",
+        "delete_node",
+        "explain_current_flow",
+        "ask_clarification"
+      ]);
+
+      if (!supportedActions.has(actionName)) {
+        appendBotMessage("error", `Unsupported automation action: ${actionName || "unknown"}`);
+        return;
+      }
+
+      if (actionName === "normal_chat") {
+        return;
+      }
+
+      if (actionName === "ask_clarification") {
+        if (args.pendingIntent) {
+          pendingAutomationIntent = args.pendingIntent;
+        }
+        appendAssistantIfNew(args.question || "أي نوع نود بدك؟ Log, Color, Uppercase, Copy, Alert");
+        return;
+      }
+
+      if (actionName === "create_node") {
+        const type = detectNodeType(args.type);
+        if (!type || !NODE_TYPES.includes(type) || type === "None") {
+          pendingAutomationIntent = { name: "create_node", args };
+          appendAssistantIfNew("أي نوع نود بدك؟ Log, Color, Uppercase, Copy, Alert");
+          return;
+        }
+
+        const title = typeof args.title === "string" && args.title.trim()
+          ? args.title.trim()
+          : `${type} Node`;
+        const node = createNode(title, type);
+
+        if (args.color && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(args.color)) {
+          node.color = args.color;
+        }
+
+        state.nodes.push(node);
+        lastCreatedNodeId = node.id;
+
+        if (args.addToWorkspace === true) {
+          node.isInZone = true;
+          node.activeOrder = getNextActiveOrder();
+          if (typeof resetNodePosition === "function") {
+            resetNodePosition(node);
+          }
+        }
+
+        addHistory("system", `Chatbot created "${node.title}" (${node.type}) node${node.isInZone ? " in the activation workspace" : ""}.`);
+        saveState();
+        render();
+
+        if (node.type === "Color" && args.color && node.color === args.color) {
+          appendBotMessage(
+            "action",
+            node.isInZone
+              ? `Done. I created a Color node with color ${args.color} and added it to the activation workspace.`
+              : `Done. I created a Color node with color ${args.color}.`
+          );
+        } else if (node.isInZone) {
+          appendBotMessage("action", `Done. I created a ${node.type} node and added it to the activation workspace.`);
+        } else {
+          appendBotMessage("action", `Done. I created a ${node.type} node.`);
+        }
+        return;
+      }
+
+      if (actionName === "add_node_to_workspace") {
+        const nodeId = Number(args.nodeId);
+        const node = state.nodes.find((item) => item.id === nodeId);
+        if (!node) {
+          appendBotMessage("error", `I could not find node ${args.nodeId}.`);
+          return;
+        }
+
+        if (node.isInZone) {
+          appendBotMessage("assistant", `Node ${node.id} is already in the activation workspace.`);
+          return;
+        }
+
+        node.isInZone = true;
+        node.activeOrder = getNextActiveOrder();
+        if (typeof resetNodePosition === "function") {
+          resetNodePosition(node);
+        }
+
+        addHistory("system", `"${node.title}" was added to the activation workspace by chatbot.`);
+        saveState();
+        render();
+        const typeLabel = node.type && node.type !== "None" ? node.type : `رقم ${node.id}`;
+        appendBotMessage("action", `تمت إضافة عقدة ${typeLabel} الموجودة إلى مساحة التفعيل.`);
+        return;
+      }
+
+      if (actionName === "move_active_node") {
+        const nodeId = Number(args.nodeId);
+        const targetNodeId = args.targetNodeId ? Number(args.targetNodeId) : null;
+        moveActiveNode(nodeId, targetNodeId, args.position || "last");
+        return;
+      }
+
+      if (actionName === "move_active_node_to_index") {
+        const { fromIndex, toIndex } = args;
+        moveActiveNodeToIndex(Number(fromIndex), Number(toIndex));
+        return;
+      }
+
+      if (actionName === "move_active_node_by_type_left") {
+        const { type } = args;
+        moveActiveNodeByTypeLeft(type);
+        return;
+      }
+
+      if (actionName === "change_active_node_color") {
+        const { nodeId, color } = args;
+        changeActiveNodeColor(Number(nodeId), color);
+        return;
+      }
+
+      if (actionName === "reorder_active_node") {
+        const sourceNode = findActiveNodeFromDescriptor(args.source);
+        if (!sourceNode) {
+          appendBotMessage("error", "I could not identify the active node to move.");
+          return;
+        }
+
+        const position = args.position || "last";
+        let targetNodeId = null;
+
+        if (position === "before" || position === "after") {
+          const targetNode = findActiveNodeFromDescriptor(args.target, { excludeNodeId: sourceNode.id });
+          if (!targetNode) {
+            appendBotMessage("error", "I could not identify the target active node for reordering.");
+            return;
+          }
+          targetNodeId = targetNode.id;
+        }
+
+        moveActiveNode(sourceNode.id, targetNodeId, position);
+        return;
+      }
+
+      if (actionName === "set_workspace_text") {
+        const text = typeof args.text === "string" ? args.text : "";
+        state.workspaceText = text;
+        addHistory("system", `Chatbot set workspace text to "${text}".`);
+        saveState();
+        render();
+        appendBotMessage("action", "Done. I updated the workspace text.");
+        return;
+      }
+
+      if (actionName === "run_linked_flow") {
+        const activeNodes = getOrderedActiveNodes();
+        if (!activeNodes.length) {
+          appendBotMessage(
+            "assistant",
+            "ما في أي نود داخل Activation Workspace. ضيفي نود للفلو أولاً أو قولي: انشئلي نود لون وحطها بالوورك سبيس."
+          );
+          return;
+        }
+
+        await runLinkedFlow();
+        appendBotMessage("action", "Done. I ran the linked flow.");
+        return;
+      }
+
+      if (actionName === "run_node") {
+        const nodeId = Number(args.nodeId);
+        const node = state.nodes.find((item) => item.id === nodeId);
+        if (!node) {
+          appendBotMessage("error", `I could not find node ${args.nodeId}.`);
+          return;
+        }
+
+        await runNode(nodeId);
+        appendBotMessage("action", `Done. I ran node ${nodeId}.`);
+        return;
+      }
+
+      if (actionName === "update_node") {
+        const nodeId = Number(args.nodeId);
+        const node = state.nodes.find((item) => item.id === nodeId);
+        if (!node) {
+          appendBotMessage("error", `I could not find node ${args.nodeId}.`);
+          return;
+        }
+
+        if (typeof args.title === "string" && args.title.trim()) {
+          node.title = args.title.trim();
+        }
+
+        if (typeof args.type === "string" && args.type.trim()) {
+          const type = detectNodeType(args.type);
+          if (!type || !NODE_TYPES.includes(type)) {
+            appendBotMessage("error", `Invalid node type: ${args.type}`);
+            return;
+          }
+          node.type = type;
+          if (node.type !== "Color") {
+            node.color = "#ff7a18";
+          }
+        }
+
+        if (typeof args.color === "string" && /^#[0-9a-f]{6}$/i.test(args.color)) {
+          node.color = args.color;
+        }
+
+        addHistory("system", `Chatbot updated "${node.title}".`);
+        saveState();
+        render();
+        appendBotMessage("action", `Done. I updated node ${nodeId}.`);
+        return;
+      }
+
+      if (actionName === "delete_node") {
+        const nodeId = Number(args.nodeId);
+        const nodeIndex = state.nodes.findIndex((item) => item.id === nodeId);
+        if (nodeIndex === -1) {
+          appendBotMessage("error", `I could not find node ${args.nodeId}.`);
+          return;
+        }
+
+        const [removedNode] = state.nodes.splice(nodeIndex, 1);
+        if (lastCreatedNodeId === removedNode.id) {
+          lastCreatedNodeId = null;
+        }
+        addHistory("system", `Chatbot deleted "${removedNode.title}".`);
+        saveState();
+        render();
+        appendBotMessage("action", `Done. I deleted node ${nodeId}.`);
+        return;
+      }
+
+      if (actionName === "explain_current_flow") {
+        appendBotMessage("assistant", buildCurrentFlowExplanation());
+      }
+    }
+
+    function extractNodeId(normalizedText) {
+      const match = normalizedText.match(/(?:node|نود|عقده)\s*(\d+)/i);
+      return match ? Number(match[1]) : null;
+    }
+
+    function buildCurrentFlowExplanation() {
+      const activeNodes = getOrderedActiveNodes();
+      const text = state.workspaceText ? `"${state.workspaceText}"` : "empty text";
+
+      if (!activeNodes.length) {
+        return `There are no active nodes in the Activation Workspace. The workspace currently has ${text}.`;
+      }
+
+      const steps = activeNodes.map((node, index) => {
+        const type = node.type === "None" ? "unassigned" : node.type;
+        const color = node.type === "Color" ? ` using ${node.color}` : "";
+        return `Step ${index + 1}: ${type} / ${node.title}${color}`;
+      });
+
+      return `The linked flow starts with ${text} and runs these active nodes in order:\n${steps.join("\n")}`;
+    }
+
+    function saveState() {
+      if (suppressAutoSave) {
+        return;
+      }
+
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+
+      autoSaveTimer = setTimeout(() => {
+        void saveConversation({ alertOnError: false, refreshList: false });
+      }, AUTO_SAVE_DELAY);
+    }
+
+    async function flushAutoSave(options = {}) {
+      if (!autoSaveTimer) {
+        return null;
+      }
+
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = null;
+      return saveConversation(options);
+    }
+
+    function buildConversationPayload() {
+      return {
+        version: 1,
+        nextNodeId: state.nextNodeId,
+        workspaceText: state.workspaceText,
+        nodes: state.nodes.map((node) => ({
+          id: node.id,
+          title: node.title,
+          type: node.type,
+          color: node.color,
+          isInZone: node.isInZone,
+          activeOrder: node.activeOrder,
+          x: node.x,
+          y: node.y
+        })),
+        history: state.history
+      };
+    }
+
+    function buildConversationTitle() {
+      const textTitle = state.workspaceText.trim().replace(/\s+/g, " ");
+      if (textTitle) {
+        return textTitle.slice(0, 40);
+      }
+
+      const activeNodes = state.nodes.filter((node) => node.isInZone).length;
+      if (activeNodes) {
+        return `Automation Flow (${activeNodes} node${activeNodes === 1 ? "" : "s"})`;
+      }
+
+      return `Conversation ${new Date().toLocaleString()}`;
+    }
+
+    function ensureSupabaseReady(showAlert = true) {
+      if (supabaseClient) {
+        return true;
+      }
+
+      updateConnectionStatus("Supabase is not configured yet.", "error");
+      if (showAlert) {
+        maybeAlertUser("Please add SUPABASE_URL and SUPABASE_ANON_KEY before saving conversations.");
+      }
+      return false;
+    }
+
+    function updateConnectionStatus(message, tone = "") {
+      connectionStatus.textContent = message;
+      connectionStatus.className = "connection-status";
+      if (tone) {
+        connectionStatus.classList.add(tone);
+      }
+    }
+
+    function maybeAlertUser(message) {
+      const now = Date.now();
+      if (now - lastAlertTimestamp < 3000) {
+        return;
+      }
+      lastAlertTimestamp = now;
+      window.alert(message);
+    }
+
+    function handleSaveError(actionLabel, error, alertOnError = true) {
+      console.error(`${actionLabel} failed`, error);
+      updateConnectionStatus(`Database error: ${error.message || actionLabel}`, "error");
+      if (alertOnError) {
+        maybeAlertUser(`Database connection failed: ${error.message || actionLabel}`);
+      }
+    }
+
+    async function saveConversation(options = {}) {
+      const { alertOnError = true, refreshList = false } = options;
+      if (isAutoSaving) {
+        return null;
+      }
+
+      if (!ensureSupabaseReady(alertOnError)) {
+        return null;
+      }
+
+      isAutoSaving = true;
+      try {
+        const payload = buildConversationPayload();
+        const conversationData = {
+          title: buildConversationTitle(),
+          content: payload
+        };
+
+        let response;
+        if (currentConversationId) {
+          response = await supabaseClient
+            .from("conversations")
+            .update(conversationData)
+            .eq("id", currentConversationId)
+            .select("id, title, created_at")
+            .single();
+        } else {
+          response = await supabaseClient
+            .from("conversations")
+            .insert(conversationData)
+            .select("id, title, created_at")
+            .single();
+        }
+
+        if (response.error) {
+          throw response.error;
+        }
+
+        currentConversationId = response.data.id;
+        updateConnectionStatus(`Connected to Supabase. Last save: ${new Date().toLocaleTimeString()}`, "connected");
+
+        if (refreshList || conversations.length === 0 || !conversations.some((item) => item.id === currentConversationId)) {
+          await fetchConversations();
+        } else {
+          updateConversationTitleInList(response.data);
+          renderConversations();
+        }
+
+        return response.data;
+      } catch (error) {
+        handleSaveError("Save conversation", error, alertOnError);
+        return null;
+      } finally {
+        isAutoSaving = false;
+      }
+    }
+
+    async function fetchConversations() {
+      if (!ensureSupabaseReady(false)) {
+        conversations = [];
+        renderConversations();
+        return [];
+      }
+
+      const { data, error } = await supabaseClient
+        .from("conversations")
+        .select("id, title, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        handleSaveError("Fetch conversations", error, true);
+        return [];
+      }
+
+      conversations = Array.isArray(data) ? data : [];
+      renderConversations();
+      updateConnectionStatus("Connected to Supabase.", "connected");
+      return conversations;
+    }
+
+    function updateConversationTitleInList(savedConversation) {
+      conversations = conversations.map((item) =>
+        item.id === savedConversation.id
+          ? { ...item, title: savedConversation.title, created_at: savedConversation.created_at }
+          : item
+      );
+
+      if (!conversations.some((item) => item.id === savedConversation.id)) {
+        conversations.unshift(savedConversation);
+      }
+    }
+
+    function renderConversations() {
+      conversationsList.innerHTML = "";
+
+      if (!conversations.length) {
+        const empty = document.createElement("p");
+        empty.className = "conversation-empty";
+        empty.textContent = ensureSupabaseReady(false)
+          ? "No saved conversations yet. Start editing and the app will auto-save to Supabase."
+          : "Add your Supabase URL and anon key, then save a chat to see it here.";
+        conversationsList.appendChild(empty);
+        return;
+      }
+
+      conversations.forEach((conversation) => {
+        const row = document.createElement("div");
+        row.className = "conversation-row";
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `conversation-item${conversation.id === currentConversationId ? " active" : ""}`;
+        button.dataset.conversationId = conversation.id;
+        button.innerHTML = `
+          <span class="conversation-title">${escapeHtml(conversation.title || "Untitled Conversation")}</span>
+          <span class="conversation-meta">${formatConversationDate(conversation.created_at)}</span>
+        `;
+        button.addEventListener("click", () => {
+          void loadConversationById(conversation.id);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "conversation-delete-btn";
+        deleteButton.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
+        deleteButton.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"></path>
+            <path d="M6.5 6l1 13a2 2 0 0 0 2 1.85h5a2 2 0 0 0 2-1.85l1-13"></path>
+            <path d="M10 10.5v6"></path>
+            <path d="M14 10.5v6"></path>
+          </svg>
+        `;
+        deleteButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          void deleteConversationById(conversation.id, conversation.title || "Untitled Conversation");
+        });
+
+        row.append(button, deleteButton);
+        conversationsList.appendChild(row);
+      });
+    }
+
+    function formatConversationDate(value) {
+      if (!value) {
+        return "No date";
+      }
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return "No date";
+      }
+
+      return parsed.toLocaleString();
+    }
+
+    async function loadConversationById(conversationId) {
+      if (!ensureSupabaseReady(true)) {
+        return;
+      }
+
+      await flushAutoSave({ alertOnError: false, refreshList: false });
+
+      const { data, error } = await supabaseClient
+        .from("conversations")
+        .select("id, title, content, created_at")
+        .eq("id", conversationId)
+        .single();
+
+      if (error) {
+        handleSaveError("Load conversation", error, true);
+        return;
+      }
+
+      currentConversationId = data.id;
+      resetState(data.content || getInitialState());
+      render();
+      renderConversations();
+      updateConnectionStatus(`Loaded conversation "${data.title || "Untitled Conversation"}".`, "connected");
+    }
+
+    async function deleteConversationById(conversationId, conversationTitle) {
+      if (!ensureSupabaseReady(true)) {
+        return;
+      }
+
+      const shouldDelete = window.confirm(`Delete "${conversationTitle}"?`);
+      if (!shouldDelete) {
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("conversations")
+        .delete()
+        .eq("id", conversationId)
+        .select("id")
+        .maybeSingle();
+
+      if (error) {
+        handleSaveError("Delete conversation", error, true);
+        return;
+      }
+
+      if (!data) {
+        handleSaveError(
+          "Delete conversation",
+          new Error("The conversation was not deleted from the database. Check your delete policy."),
+          true
+        );
+        await fetchConversations();
+        return;
+      }
+
+      await fetchConversations();
+
+      if (currentConversationId === conversationId) {
+        currentConversationId = null;
+        resetState(getInitialState());
+        render();
+      } else {
+        renderConversations();
+      }
+
+      updateConnectionStatus(`Deleted conversation "${conversationTitle}".`, "connected");
+    }
+
+    async function handleNewChat() {
+      const saved = await saveConversation({ alertOnError: true, refreshList: true });
+      if (!saved) {
+        return;
+      }
+
+      currentConversationId = null;
+      resetState(getInitialState());
+      render();
+      updateConnectionStatus("New chat started. It will auto-save after your next change.", supabaseClient ? "connected" : "error");
+    }
+
+    async function handleResetApp() {
+      const saved = await saveConversation({ alertOnError: true, refreshList: true });
+      if (!saved) {
+        return;
+      }
+
+      currentConversationId = null;
+      resetState(getInitialState());
+      render();
+      updateConnectionStatus("Workspace reset. The previous state was saved to Supabase.", supabaseClient ? "connected" : "error");
+    }
+
+    async function handleSaveChat() {
+      const saved = await flushAutoSave({ alertOnError: true, refreshList: true }) || await saveConversation({ alertOnError: true, refreshList: true });
+      if (saved) {
+        addHistory("system", `Saved conversation "${saved.title}".`);
+        renderHistory();
+      }
+    }
+
+    function render() {
+      renderNodes();
+      renderActiveNodes();
+      renderHistory();
+      renderConversations();
+      initInteractions();
+    }
+
+    function renderNodes() {
+      nodesList.innerHTML = "";
+
+      if (!state.nodes.length) {
+        const emptyState = document.createElement("div");
+        emptyState.className = "node-card";
+        emptyState.innerHTML = `
+          <div class="node-topline">
+            <span class="node-badge">No Nodes Yet</span>
+          </div>
+          <p class="node-help">Use "Add New Node" to create your first draggable automation node.</p>
+        `;
+        nodesList.appendChild(emptyState);
+        return;
+      }
+
+      state.nodes.forEach((node) => {
+        const card = document.createElement("article");
+        card.className = `node-card${node.isInZone ? " activated" : ""}`;
+        card.dataset.nodeId = String(node.id);
+        card.dataset.x = String(node.x || 0);
+        card.dataset.y = String(node.y || 0);
+        card.style.transform = `translate(${node.x || 0}px, ${node.y || 0}px)`;
+        card.innerHTML = `
+          <label>
+            Type
+            <select data-field="type">${getTypeOptionsMarkup(node.type)}</select>
+          </label>
+          ${node.type === "Color" ? `
+            <label>
+              Color
+              <input type="color" data-field="color" value="${node.color}">
+            </label>
+          ` : ""}
+          <div class="node-actions">
+            <button class="delete-node-btn" type="button" data-action="delete">Delete</button>
+          </div>
+          <p class="node-help">${getNodeHelpText(node)}</p>
+        `;
+        nodesList.appendChild(card);
+      });
+
+      nodesList.querySelectorAll("input, select").forEach((input) => {
+        input.addEventListener("input", handleNodeInput);
+        input.addEventListener("change", handleNodeInput);
+      });
+
+      nodesList.querySelectorAll("[data-action='delete']").forEach((button) => {
+        button.addEventListener("click", handleDeleteNode);
+      });
+    }
+
+    function renderActiveNodes() {
+      const activeNodes = getOrderedActiveNodes();
+      const hasRunnableNode = activeNodes.some((node) => node.type !== "None");
+      const logCount = activeNodes.filter((node) => node.type === "Log").length;
+      const colorCount = activeNodes.filter((node) => node.type === "Color").length;
+      const transformCount = activeNodes.filter((node) => node.type === "Uppercase").length;
+      const actionCount = activeNodes.filter((node) => node.type === "Copy" || node.type === "Alert").length;
+      activeCount.textContent = `${activeNodes.length} Active Node${activeNodes.length === 1 ? "" : "s"}`;
+      activeNodesContainer.innerHTML = "";
+
+      const workspaceTextPanel = document.createElement("div");
+      workspaceTextPanel.className = "workspace-text-panel";
+      workspaceTextPanel.innerHTML = `
+        <label for="workspaceTextInput">Flow Text</label>
+        <input
+          class="workspace-text-input"
+          id="workspaceTextInput"
+          type="text"
+          value="${escapeHtml(state.workspaceText)}"
+          placeholder="Write the shared text for the linked flow here"
+        >
+      `;
+      activeNodesContainer.appendChild(workspaceTextPanel);
+
+      const workspaceTextInput = document.getElementById("workspaceTextInput");
+      if (workspaceTextInput) {
+        workspaceTextInput.addEventListener("input", handleWorkspaceTextInput);
+      }
+
+      if (!activeNodes.length) {
+        const empty = document.createElement("div");
+        empty.className = "activation-empty";
+        empty.innerHTML = `
+          <div>
+            <h3>No node inside the workspace yet</h3>
+            <p>Drag any number of nodes from the left sidebar and drop them here to build one linked flow around this shared text.</p>
+          </div>
+        `;
+        activeNodesContainer.appendChild(empty);
+        return;
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "workspace-actions";
+      actions.innerHTML = `
+        <button class="run-node-btn" type="button" id="runLinkedBtn" ${hasRunnableNode ? "" : "disabled"}>
+          Run Linked Flow
+        </button>
+      `;
+      activeNodesContainer.appendChild(actions);
+
+      const status = document.createElement("div");
+      status.className = "link-status";
+      status.textContent = hasRunnableNode
+        ? `Flow ready: ${logCount} Log, ${colorCount} Color, ${transformCount} Uppercase, and ${actionCount} action node${actionCount === 1 ? "" : "s"} will run in activation order.`
+        : "Link waiting: assign at least one node type so the linked flow has something to run.";
+      activeNodesContainer.appendChild(status);
+
+      const grid = document.createElement("div");
+      grid.className = "active-nodes-grid";
+
+      activeNodes.forEach((activeNode, index) => {
+        const flowNode = document.createElement("div");
+        flowNode.className = "flow-node";
+        flowNode.dataset.nodeId = String(activeNode.id);
+        flowNode.dataset.x = "0";
+        flowNode.dataset.y = "0";
+
+        const step = document.createElement("div");
+        step.className = "flow-step";
+        step.textContent = `Step ${index + 1}`;
+
+        const card = document.createElement("article");
+        card.className = "active-node-card";
+        card.dataset.nodeId = String(activeNode.id);
+        card.innerHTML = `
+          <label>
+            Type
+            <select data-field="type">${getTypeOptionsMarkup(activeNode.type)}</select>
+          </label>
+          ${activeNode.type === "Color" ? `
+            <label>
+              Color
+              <input type="color" data-field="color" value="${activeNode.color}">
+            </label>
+          ` : ""}
+          <div class="node-actions compact-active-actions">
+            <button class="run-node-btn" type="button" data-action="run">Run</button>
+            <button class="remove-active-btn" type="button" data-action="remove">Remove</button>
+            <button class="delete-node-btn" type="button" data-action="delete">Delete</button>
+          </div>
+          <p class="node-help">${getNodeHelpText(activeNode)}</p>
+        `;
+
+        flowNode.append(step, card);
+        grid.appendChild(flowNode);
+
+        if (index < activeNodes.length - 1) {
+          const connector = document.createElement("div");
+          connector.className = "flow-connector";
+          grid.appendChild(connector);
+        }
+      });
+
+      activeNodesContainer.appendChild(grid);
+
+      activeNodesContainer.querySelectorAll("input, select").forEach((input) => {
+        input.addEventListener("input", handleNodeInput);
+        input.addEventListener("change", handleNodeInput);
+      });
+
+      activeNodesContainer.querySelectorAll("[data-action='run']").forEach((button) => {
+        button.addEventListener("click", handleRunButton);
+      });
+
+      activeNodesContainer.querySelectorAll("[data-action='remove']").forEach((button) => {
+        button.addEventListener("click", handleRemoveFromWorkspace);
+      });
+
+      activeNodesContainer.querySelectorAll("[data-action='delete']").forEach((button) => {
+        button.addEventListener("click", handleDeleteNode);
+      });
+
+      const runLinkedBtn = document.getElementById("runLinkedBtn");
+      if (runLinkedBtn) {
+        runLinkedBtn.addEventListener("click", () => {
+          void runLinkedFlow();
+        });
+      }
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = "";
+
+      if (!state.history.length) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        empty.textContent = "No history yet. Activate a node to see output here.";
+        historyList.appendChild(empty);
+        return;
+      }
+
+      state.history.forEach((item) => {
+        const entry = document.createElement("article");
+        entry.className = "history-item";
+
+        const meta = document.createElement("div");
+        meta.className = "history-meta";
+        meta.innerHTML = `<span>${escapeHtml(item.kind.toUpperCase())}</span><span>${escapeHtml(item.timestamp)}</span>`;
+
+        const message = document.createElement("p");
+        message.className = "history-message";
+        message.textContent = item.message;
+        if (item.color) {
+          message.style.color = item.color;
+        }
+
+        entry.append(meta, message);
+        historyList.appendChild(entry);
+      });
+    }
+
+    function handleNodeInput(event) {
+      const field = event.target.dataset.field;
+      const card = event.target.closest("[data-node-id]");
+      const nodeId = Number(card?.dataset.nodeId);
+      const node = state.nodes.find((item) => item.id === nodeId);
+
+      if (!node || !field) {
+        return;
+      }
+
+      node[field] = event.target.value;
+
+      if (field === "color") {
+        saveState();
+        return;
+      }
+
+      if (field === "type" && node.type !== "Color") {
+        node.color = "#ff7a18";
+      }
+
+      addHistory("state", `Changed "${node.title}" ${field}.`);
+      saveState();
+      render();
+    }
+
+    function handleWorkspaceTextInput(event) {
+      state.workspaceText = event.target.value;
+      saveState();
+    }
+
+    async function handleRunButton(event) {
+      const card = event.target.closest("[data-node-id]");
+      const nodeId = Number(card?.dataset.nodeId);
+      await runNode(nodeId);
+    }
+
+    function handleDeleteNode(event) {
+      const card = event.target.closest("[data-node-id]");
+      const nodeId = Number(card?.dataset.nodeId);
+      const nodeIndex = state.nodes.findIndex((item) => item.id === nodeId);
+
+      if (nodeIndex === -1) {
+        return;
+      }
+
+      const [removedNode] = state.nodes.splice(nodeIndex, 1);
+      addHistory("system", `Deleted "${removedNode.title}".`);
+      saveState();
+      render();
+    }
+
+    function handleRemoveFromWorkspace(event) {
+      const card = event.target.closest("[data-node-id]");
+      const nodeId = Number(card?.dataset.nodeId);
+      const node = state.nodes.find((item) => item.id === nodeId);
+
+      if (!node) {
+        return;
+      }
+
+      resetNodePosition(node);
+      node.isInZone = false;
+      node.activeOrder = null;
+      addHistory("system", `"${node.title}" was returned to the sidebar.`);
+      saveState();
+      render();
+    }
+
+    function initInteractions() {
+      interact(".node-card[data-node-id]").unset();
+      interact(".flow-node[data-node-id]").unset();
+
+      interact(".node-card[data-node-id]").draggable({
+        ignoreFrom: "input, button, label, select",
+        listeners: {
+          start(event) {
+            event.target.dataset.droppedInZone = "false";
+            event.target.classList.add("dragging");
+            createDragGhost(event.target, event);
+          },
+          move(event) {
+            const target = event.target;
+            const currentX = (parseFloat(target.dataset.x) || 0) + event.dx;
+            const currentY = (parseFloat(target.dataset.y) || 0) + event.dy;
+
+            target.style.transform = `translate(${currentX}px, ${currentY}px)`;
+            target.dataset.x = currentX;
+            target.dataset.y = currentY;
+            updateDragGhostPosition(event);
+          },
+          end(event) {
+            const target = event.target;
+            const nodeId = Number(target.dataset.nodeId);
+            const node = state.nodes.find((item) => item.id === nodeId);
+            const droppedInZone = target.dataset.droppedInZone === "true";
+
+            if (node) {
+              if (droppedInZone) {
+                resetNodePosition(node);
+                target.dataset.x = "0";
+                target.dataset.y = "0";
+                target.style.transform = "translate(0px, 0px)";
+              } else {
+                resetNodePosition(node);
+                target.dataset.x = "0";
+                target.dataset.y = "0";
+                target.style.transform = "translate(0px, 0px)";
+              }
+              saveState();
+            }
+
+            target.dataset.droppedInZone = "false";
+            target.classList.remove("dragging");
+            removeDragGhost();
+
+            if (droppedInZone) {
+              placeNodeInWorkspace(nodeId);
+            }
+          }
+        }
+      });
+
+      interact("#activationZone").dropzone({
+        accept: ".node-card[data-node-id]",
+        overlap: 0.25,
+        ondragenter() {
+          activationZone.classList.add("active-drop");
+        },
+        ondragleave() {
+          activationZone.classList.remove("active-drop");
+        },
+        ondrop(event) {
+          activationZone.classList.remove("active-drop");
+          event.relatedTarget.dataset.droppedInZone = "true";
+          event.relatedTarget.dataset.x = "0";
+          event.relatedTarget.dataset.y = "0";
+          event.relatedTarget.style.transform = "translate(0px, 0px)";
+        },
+        ondropdeactivate() {
+          activationZone.classList.remove("active-drop");
+        }
+      });
+
+      interact(".flow-node[data-node-id]").draggable({
+        ignoreFrom: "input, button, label, select",
+        listeners: {
+          start(event) {
+            event.target.classList.add("dragging-flow");
+          },
+          move(event) {
+            const target = event.target;
+            const currentX = (parseFloat(target.dataset.x) || 0) + event.dx;
+            const currentY = (parseFloat(target.dataset.y) || 0) + event.dy;
+            target.dataset.x = currentX;
+            target.dataset.y = currentY;
+            target.style.transform = `translate(${currentX}px, ${currentY}px)`;
+          },
+          end(event) {
+            const target = event.target;
+            target.classList.remove("dragging-flow");
+            target.classList.remove("flow-drop-target");
+            target.dataset.x = "0";
+            target.dataset.y = "0";
+            target.style.transform = "translate(0px, 0px)";
+          }
+        }
+      });
+
+      interact(".flow-node[data-node-id]").dropzone({
+        accept: ".flow-node[data-node-id]",
+        overlap: 0.35,
+        ondragenter(event) {
+          if (event.relatedTarget === event.target) {
+            return;
+          }
+          event.target.classList.add("flow-drop-target");
+        },
+        ondragleave(event) {
+          event.target.classList.remove("flow-drop-target");
+        },
+        ondrop(event) {
+          event.target.classList.remove("flow-drop-target");
+          const draggedId = Number(event.relatedTarget.dataset.nodeId);
+          const targetId = Number(event.target.dataset.nodeId);
+          reorderFlowNodes(draggedId, targetId);
+        },
+        ondropdeactivate(event) {
+          event.target.classList.remove("flow-drop-target");
+        }
+      });
+    }
+
+    function placeNodeInWorkspace(nodeId) {
+      const node = state.nodes.find((item) => item.id === nodeId);
+      if (!node) {
+        return;
+      }
+
+      const wasInZone = node.isInZone;
+      node.isInZone = true;
+      node.activeOrder = getNextActiveOrder();
+      resetNodePosition(node);
+
+      addHistory("system", wasInZone
+        ? `"${node.title}" was moved to the end of the linked flow.`
+        : `"${node.title}" was added to the activation workspace.`);
+      saveState();
+      render();
+    }
+
+    async function runLinkedFlow() {
+      const activeNodes = getOrderedActiveNodes();
+      if (!activeNodes.length) {
+        addHistory("system", "Linked flow is empty. Add nodes to the activation workspace first.");
+        saveState();
+        renderHistory();
+        return;
+      }
+
+      let currentColor = "";
+      let currentText = state.workspaceText || "";
+      let ranSomething = false;
+
+      for (const node of activeNodes) {
+        if (node.type === "Color") {
+          currentColor = node.color;
+          addHistory("state", `"${node.title}" updated the flow color to ${node.color}.`);
+          ranSomething = true;
+          continue;
+        }
+
+        if (node.type === "Log") {
+          addHistory(currentColor ? "color" : "log", currentText || `"${node.title}" ran with empty text.`, currentColor);
+          ranSomething = true;
+          continue;
+        }
+
+        if (node.type === "Uppercase") {
+          currentText = currentText.toUpperCase();
+          addHistory("state", `"${node.title}" converted the current flow text to uppercase.`);
+          ranSomething = true;
+          continue;
+        }
+
+        if (node.type === "Copy") {
+          await copyToClipboard(currentText, node.title);
+          ranSomething = true;
+          continue;
+        }
+
+        if (node.type === "Alert") {
+          const alertText = currentText || `"${node.title}" has no text to alert.`;
+          window.alert(alertText);
+          addHistory("system", `"${node.title}" showed an alert.`);
+          ranSomething = true;
+          continue;
+        }
+
+        addHistory("state", `"${node.title}" was skipped because it has no type yet.`);
+      }
+
+      if (!ranSomething) {
+        addHistory("system", "Linked flow did not run because all active nodes are unassigned.");
+      }
+
+      saveState();
+      renderHistory();
+    }
+
+    function getOrderedActiveNodes() {
+      return state.nodes
+        .filter((node) => node.isInZone)
+        .sort((first, second) => {
+          const firstOrder = typeof first.activeOrder === "number" ? first.activeOrder : Number.MAX_SAFE_INTEGER;
+          const secondOrder = typeof second.activeOrder === "number" ? second.activeOrder : Number.MAX_SAFE_INTEGER;
+          return firstOrder - secondOrder;
+        });
+    }
+
+    function getNextActiveOrder() {
+      return state.nodes.reduce((maxOrder, node) => {
+        if (typeof node.activeOrder === "number") {
+          return Math.max(maxOrder, node.activeOrder);
+        }
+        return maxOrder;
+      }, 0) + 1;
+    }
+
+    function moveNodeInFlow(nodeId, direction) {
+      const activeNodes = getOrderedActiveNodes();
+      const currentIndex = activeNodes.findIndex((node) => node.id === nodeId);
+
+      if (currentIndex === -1) {
+        return;
+      }
+
+      const targetIndex = currentIndex + direction;
+      if (targetIndex < 0 || targetIndex >= activeNodes.length) {
+        return;
+      }
+
+      const currentNode = activeNodes[currentIndex];
+      const targetNode = activeNodes[targetIndex];
+      const currentOrder = currentNode.activeOrder;
+      currentNode.activeOrder = targetNode.activeOrder;
+      targetNode.activeOrder = currentOrder;
+
+      addHistory("system", `"${currentNode.title}" moved ${direction < 0 ? "earlier" : "later"} in the linked flow.`);
+      saveState();
+      render();
+    }
+
+    function reorderFlowNodes(draggedNodeId, targetNodeId) {
+      if (draggedNodeId === targetNodeId) {
+        return;
+      }
+
+      const activeNodes = getOrderedActiveNodes();
+      const draggedIndex = activeNodes.findIndex((node) => node.id === draggedNodeId);
+      const targetIndex = activeNodes.findIndex((node) => node.id === targetNodeId);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        return;
+      }
+
+      const reorderedNodes = [...activeNodes];
+      const [draggedNode] = reorderedNodes.splice(draggedIndex, 1);
+      const insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+      reorderedNodes.splice(insertIndex, 0, draggedNode);
+
+      reorderedNodes.forEach((node, index) => {
+        node.activeOrder = index + 1;
+      });
+
+      addHistory("system", `"${draggedNode.title}" was reordered inside the linked flow.`);
+      saveState();
+      render();
+    }
+
+    async function runNode(nodeId) {
+      const node = state.nodes.find((item) => item.id === nodeId);
+      if (!node) {
+        return;
+      }
+
+      const currentText = state.workspaceText || "";
+
+      if (node.type === "Color") {
+        addHistory("color", currentText || `"${node.title}" ran with empty text.`, node.color);
+      } else if (node.type === "Log") {
+        addHistory("log", currentText || `"${node.title}" ran with empty text.`);
+      } else if (node.type === "Uppercase") {
+        addHistory("log", currentText.toUpperCase() || `"${node.title}" ran with empty text.`);
+      } else if (node.type === "Copy") {
+        await copyToClipboard(currentText, node.title);
+      } else if (node.type === "Alert") {
+        window.alert(currentText || `"${node.title}" has no text to alert.`);
+        addHistory("system", `"${node.title}" showed an alert.`);
+      } else {
+        addHistory("system", `"${node.title}" has no type yet. Choose a node type before running it.`);
+      }
+
+      saveState();
+      renderHistory();
+    }
+
+    async function copyToClipboard(text, nodeTitle) {
+      const value = text || "";
+      if (!value) {
+        addHistory("system", `"${nodeTitle}" has no text to copy.`);
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          const tempTextarea = document.createElement("textarea");
+          tempTextarea.value = value;
+          tempTextarea.setAttribute("readonly", "");
+          tempTextarea.style.position = "absolute";
+          tempTextarea.style.left = "-9999px";
+          document.body.appendChild(tempTextarea);
+          tempTextarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(tempTextarea);
+        }
+        addHistory("system", `"${nodeTitle}" copied text to clipboard.`);
+      } catch (error) {
+        addHistory("system", `Clipboard copy failed for "${nodeTitle}".`);
+      }
+    }
+
+    function resetNodePosition(node) {
+      node.x = 0;
+      node.y = 0;
+    }
+
+    function createDragGhost(sourceNode, event) {
+      removeDragGhost();
+      const ghost = sourceNode.cloneNode(true);
+      const rect = sourceNode.getBoundingClientRect();
+      ghost.classList.add("drag-ghost");
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.height = `${rect.height}px`;
+      ghost.style.transform = "translate(-50%, -50%) rotate(1.5deg)";
+      document.body.appendChild(ghost);
+      dragGhost = ghost;
+      updateDragGhostPosition(event);
+    }
+
+    function updateDragGhostPosition(event) {
+      if (!dragGhost) {
+        return;
+      }
+
+      const x = typeof event.clientX === "number" ? event.clientX : event.pageX;
+      const y = typeof event.clientY === "number" ? event.clientY : event.pageY;
+      dragGhost.style.left = `${x}px`;
+      dragGhost.style.top = `${y}px`;
+    }
+
+    function removeDragGhost() {
+      if (!dragGhost) {
+        return;
+      }
+
+      dragGhost.remove();
+      dragGhost = null;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function initializeApp() {
+      render();
+
+      if (!ensureSupabaseReady(false)) {
+        return;
+      }
+
+      const items = await fetchConversations();
+      if (items.length) {
+        await loadConversationById(items[0].id);
+      } else {
+        updateConnectionStatus("Connected to Supabase. No saved conversations yet.", "connected");
+      }
+    }
+
+    void initializeApp();
+  </script>
+</body>
+</html>
